@@ -72,6 +72,7 @@ class AuditLoggingControlPanel:
                 {"type": "radiogroup", "name": "backend", "title": "Backend", "isRequired": True,
                  "choices": [{"value": "zodb", "text": "ZODB"}, {"value": "rdbms", "text": "RDBMS"}]},
                 {"type": "dropdown", "name": "transaction_mode", "title": "Transaction mode",
+                 "description": "Joined writes with the current transaction; outbox queues delivery; independent commits separately.",
                  "choices": ["joined", "outbox", "independent"]},
                 {"type": "text", "name": "detail_limit", "title": "Detail byte limit", "inputType": "number",
                  "min": 1024, "max": 1048576, "isRequired": True},
@@ -79,7 +80,7 @@ class AuditLoggingControlPanel:
                  "description": "Select the Plone content types whose lifecycle events should be logged.",
                  "choices": self._content_type_choices()},
                 {"type": "text", "name": "database_url", "title": "Database URL", "inputType": "password",
-                 "description": "Optional RDBMS URL."},
+                 "description": "Optional RDBMS URL.", "visibleIf": "{backend} = 'rdbms'"},
             ]}],
             "data": {
                 "backend": getattr(settings, "backend", "zodb"),

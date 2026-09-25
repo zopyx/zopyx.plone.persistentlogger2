@@ -342,6 +342,8 @@ def test_controlpanel_settings_and_logging(monkeypatch):
     view = controlpanel.AuditLoggingControlPanel(SimpleNamespace(absolute_url=lambda: "http://example/Plone"), Request({"_authenticator": "token"}))
     survey = view.survey()
     assert survey["data"]["enabled_content_types"] == ["Document"]
+    database_question = next(item for item in survey["pages"][0]["elements"] if item["name"] == "database_url")
+    assert database_question["visibleIf"] == "{backend} = 'rdbms'"
     assert view.save_url.endswith("_authenticator=token")
     monkeypatch.setattr("plone.protect.createToken", lambda: "generated")
     no_token_view = controlpanel.AuditLoggingControlPanel(view.context, Request())
