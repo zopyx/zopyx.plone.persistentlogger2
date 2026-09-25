@@ -8,7 +8,7 @@ from uuid import UUID
 
 from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
 
-from .api import export_events, search_events, verify_integrity
+from .api import export_events, verify_integrity
 from .errors import ValidationError
 
 
@@ -37,13 +37,31 @@ class AuditData:
         self.context, self.request = context, request
 
     def __call__(self) -> str:
-        filters = {
+        filters: dict[str, Any] = {
             key: self.request.form.get(key)
             for key in ("actor", "event_type", "severity", "quick", "from", "to")
             if self.request.form.get(key)
         }
+        try:
+            start = max(int(self.request.form.get("startRow", 0)), 0)
+            end = max(int(self.request.form.get("endRow", start + 25)), start + 1)
+        except (TypeError, ValueError) as exc:
+            raise ValidationError("row range must be integers") from exc
+        filters["offset"] = start
+        filters["limit"] = min(end - start, 100)
+        for request_key, filter_key in (("sortModel", "sort_model"), ("filterModel", "filter_model")):
+            value = self.request.form.get(request_key)
+            if value:
+                try:
+                    filters[filter_key] = json.loads(value)
+                except (TypeError, ValueError) as exc:
+                    raise ValidationError(f"{request_key} must be JSON") from exc
+        repository = __import__(
+            "zopyx.plone.persistentlogger.api", fromlist=["repository_for"]
+        ).repository_for(self.context)
         return json_response(
-            self.request, {"rows": search_events(self.context, limit=100, **filters)}
+            self.request,
+            {"rows": repository.search(**filters), "total": repository.count(**filters)},
         )
 
 

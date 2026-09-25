@@ -5,12 +5,12 @@
   <metal:block fill-slot="head_slot">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@34.0.0/styles/ag-grid.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@34.0.0/styles/ag-theme-quartz.css" />
-    <link rel="stylesheet" href="++resource++persistentlogger/audit_log.css?v=13" />
+    <link rel="stylesheet" href="++resource++persistentlogger/audit_log.css?v=14" />
   </metal:block>
 
   <metal:block fill-slot="javascript_head_slot">
-    <script src="https://cdn.jsdelivr.net/npm/ag-grid-community@34.0.0/dist/ag-grid-community.min.js"></script>
-    <script src="++resource++persistentlogger/audit_log.js?v=13"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ag-grid-enterprise@34.0.0/dist/ag-grid-enterprise.min.js"></script>
+    <script src="++resource++persistentlogger/audit_log.js?v=14"></script>
   </metal:block>
 
   <body>

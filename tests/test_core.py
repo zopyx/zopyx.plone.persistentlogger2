@@ -130,6 +130,8 @@ def test_memory_repository_append_search_and_integrity():
     assert row["sequence"] == 1
     assert repo.search(quick="CHANGED")[0]["event_id"] == str(first.event_id)
     assert repo.search(actor="alice", event_type="content.changed", limit=1)
+    assert repo.search(filter_model={"comment": {"type": "contains", "filter": "changed"}})
+    assert repo.search(sort_model=[{"colId": "actor", "sort": "asc"}])
     assert repo.count() == 1
     assert repo.verify()["ok"]
     with pytest.raises(IdempotentReplay):
@@ -139,6 +141,22 @@ def test_memory_repository_append_search_and_integrity():
     repo._events[0]["comment"] = "tampered"
     assert repo.verify()["ok"] is False
     assert repo.health()["integrity"] is False
+
+
+def test_memory_repository_server_filter_models():
+    repo = MemoryRepository("item")
+    repo.append(event(comment="changed invoice"))
+    row = repo.search()[0]
+    assert repo.search(filter_model={"missing": {"type": "equals", "filter": "x"}})
+    assert repo.search(filter_model={"target": {"type": "blank"}})
+    assert repo.search(filter_model={"comment": {"type": "notBlank"}})
+    assert repo.search(filter_model={"actor": {"type": "set", "values": ["alice"]}})
+    assert repo.search(filter_model={"comment": {"type": "equals", "filter": row["comment"]}})
+    assert repo.search(filter_model={"actor": {"type": "notEqual", "filter": "bob"}})
+    assert repo.search(filter_model={"comment": {"type": "startsWith", "filter": "changed"}})
+    assert repo.search(filter_model={"comment": {"type": "endsWith", "filter": "invoice"}})
+    assert repo.search(sort_model=[{"colId": "not-a-field", "sort": "asc"}])
+    assert repo.search(sort_model=["invalid"])
 
 
 def test_memory_repository_governance_retention_and_holds():
@@ -294,14 +312,15 @@ class Request:
 
 def test_browser_adapters(monkeypatch):
     context = SimpleNamespace(absolute_url=lambda: "http://example/obj")
-    request = Request({"quick": "title"})
-    monkeypatch.setattr(
-        browser,
-        "search_events",
-        lambda _context, **filters: [{"quick": filters["quick"]}],
+    request = Request({"quick": "title", "startRow": "5", "endRow": "30", "sortModel": "[]", "filterModel": "{}"})
+    repo = SimpleNamespace(
+        search=lambda **filters: [{"quick": filters["quick"], "offset": filters["offset"], "limit": filters["limit"]}],
+        count=lambda **filters: 11,
     )
+    monkeypatch.setattr("zopyx.plone.persistentlogger.api.repository_for", lambda _: repo)
     result = browser.AuditData(context, request)()
-    assert '"rows"' in result
+    assert '"total": 11' in result
+    assert '"offset": 5' in result
     assert request.response.headers["Content-Type"].startswith("application/json")
     view = browser.AuditLog(context, request)
     assert view.data_url.endswith("@@persistent-log-data")
@@ -318,6 +337,19 @@ def test_browser_adapters(monkeypatch):
     )
     with pytest.raises(ValidationError):
         browser._post(Request())
+
+
+def test_browser_audit_data_validates_server_requests(monkeypatch):
+    context = SimpleNamespace(id="item")
+    repo = SimpleNamespace(search=lambda **_: [], count=lambda **_: 0)
+    monkeypatch.setattr("zopyx.plone.persistentlogger.api.repository_for", lambda _: repo)
+    with pytest.raises(ValidationError):
+        browser.AuditData(context, Request({"startRow": "bad"}))()
+    with pytest.raises(ValidationError):
+        browser.AuditData(context, Request({"sortModel": "bad"}))()
+    with pytest.raises(ValidationError):
+        browser.AuditData(context, Request({"filterModel": "bad"}))()
+    assert '"total": 0' in browser.AuditData(context, Request({"startRow": "2"}))()
 
 
 def test_subscriber_diff_helpers():
