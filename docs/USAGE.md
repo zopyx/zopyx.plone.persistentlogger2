@@ -25,6 +25,28 @@ Keep details JSON-compatible and avoid credentials in comments, targets, or
 URLs. Details are redacted and bounded, but callers should still avoid passing
 secrets unnecessarily.
 
+## Site-wide notifications
+
+For events emitted by another add-on, publish
+`PersistentLoggerNotification` through `zope.event`:
+
+```python
+from zope.event import notify
+from zopyx.plone.persistentlogger import PersistentLoggerNotification
+
+notify(PersistentLoggerNotification(
+    "Payment captured",
+    event_type="billing.payment.captured",
+    actor="billing-service",
+    details={"payment_id": payment_id},
+))
+```
+
+During a normal Plone request the subscriber resolves the current site and
+stores the record under the Plone root. Jobs running outside a request should
+pass `site=portal`. This stream is explicit application logging and does not
+depend on the lifecycle content-type selection.
+
 ## Audit view
 
 The **Logging** object action opens `@@persistent-log`, which uses AG Grid

@@ -117,6 +117,42 @@ a non-empty reason. Active legal holds are excluded from previews and block
 deletion if a selected event becomes held. `api.clear` always raises
 `ValidationError`.
 
+## Site-wide notifications
+
+Other add-ons can publish a notification through the standard `zope.event`
+channel:
+
+```python
+from zope.event import notify
+from zopyx.plone.persistentlogger import PersistentLoggerNotification
+
+notify(PersistentLoggerNotification(
+    "Invoice approved",
+    event_type="business.invoice.approved",
+    actor="billing-service",
+    details={"invoice_id": "INV-42"},
+))
+```
+
+The persistent logger subscriber resolves the current Plone site with
+`zope.component.hooks.getSite()` and sends the event through `log_event` using
+the site root as its context. For code outside a request, pass `site=portal`:
+
+```python
+notify(PersistentLoggerNotification(
+    "Nightly import completed",
+    event_type="integration.import.completed",
+    actor="nightly-job",
+    details={"count": 1250},
+    site=portal,
+))
+```
+
+The notification event supports `comment`, `event_type`, `severity`, `actor`,
+`target`, `info_url`, `details`, `occurred_at`, and `site`. The subscriber is
+explicit application logging, so it is not gated by the lifecycle content-type
+allow-list.
+
 ## Repository contract
 
 `repository_for(context)` is the application API's backend seam. Plone uses

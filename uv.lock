@@ -4872,6 +4872,7 @@ dependencies = [
     { name = "plone-protect" },
     { name = "zope-annotation" },
     { name = "zope-component" },
+    { name = "zope-event" },
     { name = "zope-interface" },
 ]
 
@@ -4917,6 +4918,7 @@ requires-dist = [
     { name = "watchfiles", marker = "extra == 'dev'", specifier = ">=1.0" },
     { name = "zope-annotation" },
     { name = "zope-component" },
+    { name = "zope-event" },
     { name = "zope-interface" },
 ]
 provides-extras = ["rdbms", "test", "integration", "dev", "demo"]

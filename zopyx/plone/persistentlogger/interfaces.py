@@ -2,6 +2,10 @@ from zope.interface import Interface
 from zope import schema
 
 
+class IPersistentLoggerNotification(Interface):
+    """Marker interface for site-wide audit notifications."""
+
+
 class ISettings(Interface):
     audit_logging_enabled = schema.Bool(
         title="Audit logging",

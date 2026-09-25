@@ -69,6 +69,24 @@ known sensitive detail keys are redacted.
 See [docs/USAGE.md](docs/USAGE.md) for lifecycle logging, the audit view,
 integrity checks, exports, and retention examples.
 
+Other add-ons can publish a site-wide notification with `zope.event`:
+
+```python
+from zope.event import notify
+from zopyx.plone.persistentlogger import PersistentLoggerNotification
+
+notify(PersistentLoggerNotification(
+    "Invoice approved",
+    event_type="business.invoice.approved",
+    actor="billing-service",
+    details={"invoice_id": "INV-42"},
+))
+```
+
+The notification subscriber resolves the current Plone site and logs the
+event under that site root. Background jobs should pass `site=portal` on the
+notification explicitly.
+
 ## Plone views and permissions
 
 For an object at `/Plone/path/to/object`:

@@ -22,6 +22,7 @@ from zopyx.plone.persistentlogger.models import (
     Severity,
     utc,
 )
+from zopyx.plone.persistentlogger.notifications import PersistentLoggerNotification
 from zopyx.plone.persistentlogger.outbox import Envelope, Outbox
 from zopyx.plone.persistentlogger.rdbms import DuckDBRepository, SQLiteRepository
 from zopyx.plone.persistentlogger.repository import (
@@ -373,6 +374,37 @@ def test_subscriber_diff_helpers():
         descriptions=[SimpleNamespace(attributes=("title",), keys=("subject",))]
     )
     assert subscribers._changed_fields(event_object) == ["subject", "title"]
+
+
+def test_site_notification_subscriber_logs_at_site_root(monkeypatch):
+    site = SimpleNamespace(id="Plone")
+    logged = []
+    monkeypatch.setattr(subscribers, "log_event", lambda *args, **kwargs: logged.append((args, kwargs)))
+    notification = PersistentLoggerNotification(
+        "Invoice approved",
+        event_type="business.invoice.approved",
+        actor="alice",
+        details={"invoice_id": "INV-42"},
+        site=site,
+    )
+    subscribers.log_notification(notification)
+    assert logged == [
+        ((site, "Invoice approved"), {
+            "event_type": "business.invoice.approved",
+            "severity": "info",
+            "actor": "alice",
+            "target": None,
+            "info_url": None,
+            "details": {"invoice_id": "INV-42"},
+            "occurred_at": None,
+        })
+    ]
+    monkeypatch.setattr(subscribers, "getSite", lambda: site)
+    subscribers.log_notification(PersistentLoggerNotification("Uses current site"))
+    assert logged[-1][0][0] is site
+    monkeypatch.setattr(subscribers, "getSite", lambda: None)
+    subscribers.log_notification(PersistentLoggerNotification("No site"))
+    assert len(logged) == 2
 
 
 def test_api_services_and_export_limits(monkeypatch):

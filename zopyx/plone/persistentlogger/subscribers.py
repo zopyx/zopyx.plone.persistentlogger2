@@ -5,8 +5,11 @@ from __future__ import annotations
 from contextvars import ContextVar
 from typing import Any
 
+from zope.component.hooks import getSite
+
 from .api import log_event, search_events
 from .controlpanel import logging_enabled
+from .notifications import PersistentLoggerNotification
 from .serialization import normalize
 
 
@@ -174,6 +177,28 @@ def log_modified(context: Any, event: Any) -> None:
             event_type="plone.content.modified",
             actor=_actor(),
             details=details,
+        )
+    finally:
+        _WRITING_AUDIT.reset(token)
+
+
+def log_notification(event: PersistentLoggerNotification) -> None:
+    """Persist a published notification against the current Plone site root."""
+    site = event.site or getSite()
+    if site is None or _WRITING_AUDIT.get():
+        return
+    token = _WRITING_AUDIT.set(True)
+    try:
+        log_event(
+            site,
+            event.comment,
+            event_type=event.event_type,
+            severity=event.severity,
+            actor=event.actor,
+            target=event.target,
+            info_url=event.info_url,
+            details=event.details,
+            occurred_at=event.occurred_at,
         )
     finally:
         _WRITING_AUDIT.reset(token)
