@@ -1,15 +1,13 @@
 .persistentlogger-shell {
   --audit-ink: #17221f;
   --audit-muted: #66736f;
-  --audit-paper: #f4f6f1;
   --audit-panel: #ffffff;
   --audit-accent: #c7f36b;
   --audit-line: #dce5df;
   max-width: 1180px;
-  margin: 0 auto;
-  padding: 1.25rem 1.25rem 2.5rem;
+  margin: 0;
+  padding: 0 0 2.5rem;
   color: var(--audit-ink);
-  background: var(--audit-paper);
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 .persistentlogger-header { padding-bottom: .7rem; }
@@ -46,5 +44,5 @@
 .persistentlogger-empty, .persistentlogger-error { padding: 2rem; color: var(--audit-muted); }
 .persistentlogger-error { color: #a02929; }
 .visually-hidden { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(1px, 1px, 1px, 1px); white-space: nowrap; }
-@media (max-width: 700px) { .persistentlogger-shell { padding: 2rem .75rem; } .persistentlogger-toolbar { align-items: stretch; } .persistentlogger-toolbar button { width: 100%; } .persistentlogger-export-actions { width: 100%; } .persistentlogger-export-actions button { flex: 1; } #persistentlogger-details-dialog { width: calc(100vw - 1rem); max-width: calc(100vw - 1rem); } #persistentlogger-details-dialog .modal-header, #persistentlogger-details-dialog .modal-body { padding-left: 1rem; padding-right: 1rem; } #persistentlogger-details-dialog .modal-footer { padding-left: 1rem; padding-right: 1rem; } }
+@media (max-width: 700px) { .persistentlogger-shell { padding: 0 0 2.5rem; } .persistentlogger-toolbar { align-items: stretch; } .persistentlogger-toolbar button { width: 100%; } .persistentlogger-export-actions { width: 100%; } .persistentlogger-export-actions button { flex: 1; } #persistentlogger-details-dialog { width: calc(100vw - 1rem); max-width: calc(100vw - 1rem); } #persistentlogger-details-dialog .modal-header, #persistentlogger-details-dialog .modal-body { padding-left: 1rem; padding-right: 1rem; } #persistentlogger-details-dialog .modal-footer { padding-left: 1rem; padding-right: 1rem; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; } }
