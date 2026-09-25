@@ -9,7 +9,7 @@
   <metal:block fill-slot="javascript_head_slot">
     <script src="https://unpkg.com/survey-core@3.0.4/survey.core.min.js"></script>
     <script src="https://unpkg.com/survey-js-ui@3.0.4/survey-js-ui.min.js"></script>
-    <script src="++resource++persistentlogger/controlpanel.js?v=1"></script>
+    <script src="++resource++persistentlogger/controlpanel.js?v=2"></script>
   </metal:block>
   <body>
     <metal:block fill-slot="main">
