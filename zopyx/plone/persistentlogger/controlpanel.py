@@ -52,6 +52,10 @@ class AuditLoggingControlPanel:
             token = createToken()
         return f"{url}?_authenticator={quote(str(token))}" if token else url
 
+    @property
+    def redirect_url(self):
+        return f"{self.context.absolute_url()}/@@persistentlogger-controlpanel"
+
     def _settings(self):
         registry = _registry()
         return registry.forInterface(ISettings, check=False) if registry else None

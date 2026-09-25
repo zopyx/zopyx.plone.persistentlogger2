@@ -357,6 +357,7 @@ def test_controlpanel_settings_and_logging(monkeypatch):
     settings.audit_logging_enabled = False
     assert not controlpanel.logging_enabled(context)
     assert view.save_url.endswith("_authenticator=token")
+    assert view.redirect_url.endswith("@@persistentlogger-controlpanel")
     monkeypatch.setattr("plone.protect.createToken", lambda: "generated")
     no_token_view = controlpanel.AuditLoggingControlPanel(view.context, Request())
     assert no_token_view.save_url.endswith("_authenticator=generated")

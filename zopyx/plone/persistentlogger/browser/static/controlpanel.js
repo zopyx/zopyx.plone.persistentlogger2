@@ -12,7 +12,7 @@
         body: JSON.stringify(sender.data)
       }).then(function (response) {
         if (!response.ok) throw new Error("Unable to save settings");
-        window.location.assign(response.url);
+        window.location.assign(root.dataset.redirectUrl);
       }).catch(function () {
         sender.showCompletedPage = false;
         sender.completedHtml = "<div class='message error'>Settings could not be saved.</div>";

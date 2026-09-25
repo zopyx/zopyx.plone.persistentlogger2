@@ -14,7 +14,7 @@
   <body>
     <metal:block fill-slot="main">
       <main id="persistentlogger-controlpanel"
-            tal:attributes="data-save-url view/save_url; data-survey python:__import__('json').dumps(view.survey())">
+            tal:attributes="data-save-url view/save_url; data-redirect-url view/redirect_url; data-survey python:__import__('json').dumps(view.survey())">
         <div id="persistentlogger-survey"></div>
       </main>
     </metal:block>
