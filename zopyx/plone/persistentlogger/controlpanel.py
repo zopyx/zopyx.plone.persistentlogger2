@@ -72,7 +72,7 @@ class AuditLoggingControlPanel:
                 {"type": "panel", "name": "backend_settings", "title": "Backend", "elements": [
                     {"type": "radiogroup", "name": "backend", "title": "Storage backend", "defaultValue": "zodb", "isRequired": True,
                      "choices": [{"value": "zodb", "text": "ZODB"}, {"value": "rdbms", "text": "RDBMS"}]},
-                    {"type": "dropdown", "name": "transaction_mode", "title": "Transaction mode",
+                    {"type": "dropdown", "name": "transaction_mode", "title": "Transaction mode", "defaultValue": "outbox",
                      "description": "Joined writes with the current transaction; outbox queues delivery; independent commits separately.",
                      "choices": ["joined", "outbox", "independent"]},
                     {"type": "text", "name": "database_url", "title": "Database URL", "inputType": "password",

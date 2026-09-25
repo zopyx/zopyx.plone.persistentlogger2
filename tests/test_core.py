@@ -343,6 +343,8 @@ def test_controlpanel_settings_and_logging(monkeypatch):
     survey = view.survey()
     assert survey["data"]["backend"] == "zodb"
     assert survey["pages"][0]["elements"][0]["elements"][0]["defaultValue"] == "zodb"
+    assert survey["data"]["transaction_mode"] == "outbox"
+    assert survey["pages"][0]["elements"][0]["elements"][1]["defaultValue"] == "outbox"
     assert survey["data"]["enabled_content_types"] == ["Document"]
     questions = [item for panel in survey["pages"][0]["elements"] for item in panel["elements"]]
     database_question = next(item for item in questions if item["name"] == "database_url")
