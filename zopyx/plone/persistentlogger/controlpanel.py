@@ -129,6 +129,7 @@ class AuditLoggingControlPanelSave:
         registry = _registry()
         if registry is None:
             raise ValidationError("Plone registry is unavailable")
+        registry.registerInterface(ISettings)
         settings = registry.forInterface(ISettings, check=False)
         audit_logging_enabled = data.get("audit_logging_enabled", True)
         if not isinstance(audit_logging_enabled, bool):

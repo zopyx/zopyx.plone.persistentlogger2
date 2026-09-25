@@ -370,7 +370,8 @@ def test_controlpanel_save(monkeypatch):
     from zopyx.plone.persistentlogger import controlpanel
 
     settings = SimpleNamespace()
-    registry = SimpleNamespace(forInterface=lambda *_args, **_kwargs: settings)
+    registry = SimpleNamespace(forInterface=lambda *_args, **_kwargs: settings,
+                               registerInterface=lambda *_args, **_kwargs: None)
     monkeypatch.setattr(controlpanel, "_registry", lambda: registry)
     monkeypatch.setattr("Products.statusmessages.interfaces.IStatusMessage", lambda _: SimpleNamespace(addStatusMessage=lambda *_args, **_kwargs: None))
 
