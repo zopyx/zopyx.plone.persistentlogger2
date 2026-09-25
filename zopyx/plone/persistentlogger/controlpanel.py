@@ -27,7 +27,12 @@ def enabled_content_types(context):
 
 
 def logging_enabled(context) -> bool:
-    return getattr(context, "portal_type", None) in enabled_content_types(context)
+    registry = _registry()
+    globally_enabled = True
+    if registry is not None:
+        settings = registry.forInterface(ISettings, check=False)
+        globally_enabled = getattr(settings, "audit_logging_enabled", True)
+    return globally_enabled and getattr(context, "portal_type", None) in enabled_content_types(context)
 
 
 class AuditLoggingControlPanel:
@@ -69,6 +74,8 @@ class AuditLoggingControlPanel:
             "completedHtml": "<div class='message success'>Settings saved.</div>",
             "completeText": "Save settings",
             "pages": [{"name": "settings", "elements": [
+                {"type": "boolean", "name": "audit_logging_enabled", "title": "Audit logging",
+                 "description": "Enable or disable audit logging globally.", "defaultValue": True},
                 {"type": "panel", "name": "backend_settings", "title": "Backend", "elements": [
                     {"type": "radiogroup", "name": "backend", "title": "Storage backend", "defaultValue": "zodb", "isRequired": True,
                      "choices": [{"value": "zodb", "text": "ZODB"}, {"value": "rdbms", "text": "RDBMS"}]},
@@ -88,6 +95,7 @@ class AuditLoggingControlPanel:
                 ]},
             ]}],
             "data": {
+                "audit_logging_enabled": getattr(settings, "audit_logging_enabled", True),
                 "backend": getattr(settings, "backend", None) or "zodb",
                 "transaction_mode": getattr(settings, "transaction_mode", None) or "outbox",
                 "detail_limit": getattr(settings, "detail_limit", 65536),
@@ -119,6 +127,9 @@ class AuditLoggingControlPanelSave:
         if registry is None:
             raise ValidationError("Plone registry is unavailable")
         settings = registry.forInterface(ISettings, check=False)
+        audit_logging_enabled = data.get("audit_logging_enabled", True)
+        if not isinstance(audit_logging_enabled, bool):
+            raise ValidationError("audit_logging_enabled must be boolean")
         backend = str(data.get("backend", "zodb"))
         transaction_mode = str(data.get("transaction_mode", "outbox"))
         if backend not in {"zodb", "rdbms"} or transaction_mode not in {"joined", "outbox", "independent"}:
@@ -132,6 +143,7 @@ class AuditLoggingControlPanelSave:
         enabled = data.get("enabled_content_types", ()) or ()
         if not isinstance(enabled, list) or not all(isinstance(item, str) for item in enabled):
             raise ValidationError("enabled_content_types must be a list of strings")
+        settings.audit_logging_enabled = audit_logging_enabled
         settings.backend = backend
         settings.transaction_mode = transaction_mode
         settings.detail_limit = detail_limit

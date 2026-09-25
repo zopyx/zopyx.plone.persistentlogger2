@@ -342,15 +342,19 @@ def test_controlpanel_settings_and_logging(monkeypatch):
     view = controlpanel.AuditLoggingControlPanel(SimpleNamespace(absolute_url=lambda: "http://example/Plone"), Request({"_authenticator": "token"}))
     survey = view.survey()
     assert survey["data"]["backend"] == "zodb"
-    assert survey["pages"][0]["elements"][0]["elements"][0]["defaultValue"] == "zodb"
+    assert survey["data"]["audit_logging_enabled"] is True
+    assert survey["pages"][0]["elements"][0]["defaultValue"] is True
+    assert survey["pages"][0]["elements"][1]["elements"][0]["defaultValue"] == "zodb"
     assert survey["data"]["transaction_mode"] == "outbox"
-    assert survey["pages"][0]["elements"][0]["elements"][1]["defaultValue"] == "outbox"
+    assert survey["pages"][0]["elements"][1]["elements"][1]["defaultValue"] == "outbox"
     assert survey["data"]["enabled_content_types"] == ["Document"]
-    questions = [item for panel in survey["pages"][0]["elements"] for item in panel["elements"]]
+    questions = [item for panel in survey["pages"][0]["elements"] if "elements" in panel for item in panel["elements"]]
     database_question = next(item for item in questions if item["name"] == "database_url")
     assert database_question["visibleIf"] == "{backend} = 'rdbms'"
     content_types_question = next(item for item in questions if item["name"] == "enabled_content_types")
     assert content_types_question["colCount"] == 3
+    settings.audit_logging_enabled = False
+    assert not controlpanel.logging_enabled(context)
     assert view.save_url.endswith("_authenticator=token")
     monkeypatch.setattr("plone.protect.createToken", lambda: "generated")
     no_token_view = controlpanel.AuditLoggingControlPanel(view.context, Request())
@@ -380,7 +384,7 @@ def test_controlpanel_save(monkeypatch):
     assert result == '{"ok": true}'
     assert settings.backend == "rdbms"
     assert settings.enabled_content_types == {"Document"}
-    for payload in ("not-json", '{"backend":"invalid"}', '{"detail_limit":1}', '{"detail_limit":"bad"}', '{"enabled_content_types":"Document"}'):
+    for payload in ("not-json", '{"audit_logging_enabled":"yes"}', '{"backend":"invalid"}', '{"detail_limit":1}', '{"detail_limit":"bad"}', '{"enabled_content_types":"Document"}'):
         with pytest.raises(ValidationError):
             controlpanel.AuditLoggingControlPanelSave(context, BodyRequest(payload))()
     monkeypatch.setattr(controlpanel, "_registry", lambda: None)

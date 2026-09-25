@@ -2,6 +2,11 @@ from zope.interface import Interface
 from zope import schema
 
 class ISettings(Interface):
+    audit_logging_enabled = schema.Bool(
+        title="Audit logging",
+        description="Enable or disable audit logging globally.",
+        default=True,
+    )
     backend = schema.Choice(title="Backend", values=("zodb", "rdbms"), default="zodb")
     transaction_mode = schema.Choice(title="Transaction mode", values=("joined", "outbox", "independent"), default="outbox")
     detail_limit = schema.Int(title="Detail byte limit", default=65536, min=1024, max=1048576)
