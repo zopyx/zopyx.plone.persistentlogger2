@@ -2,7 +2,7 @@ PYTHON ?= 3.12
 UV ?= uv
 PACKAGE := zopyx.plone.persistentlogger
 
-.PHONY: install test integration test-postgres dev coverage check build clean bootstrap-demo
+.PHONY: install test integration test-rdbms test-postgres dev coverage check build clean bootstrap-demo
 
 install:
 	$(UV) sync --extra test
@@ -11,6 +11,9 @@ test:
 	$(UV) run --extra test --extra rdbms pytest -q --cov=$(PACKAGE) --cov-branch --cov-report=term-missing --cov-report=xml --cov-fail-under=99
 
 integration:
+	$(MAKE) test-rdbms
+
+test-rdbms:
 	RUN_INTEGRATION=1 $(UV) run --extra test --extra rdbms --extra integration pytest -q -m integration tests/test_rdbms_contract.py
 
 test-postgres:

@@ -113,6 +113,7 @@ Install the test environment and run the standard checks::
     make test
     make coverage
     make integration
+    make test-rdbms
     make test-postgres
     make build
 

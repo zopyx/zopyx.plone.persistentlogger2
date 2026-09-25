@@ -17,7 +17,8 @@ make check
 ```
 
 Useful targets are `make test`, `make coverage`, `make integration`,
-`make test-postgres`, `make dev`, `make build`, and `make bootstrap-demo`.
+`make test-rdbms`, `make test-postgres`, `make dev`, `make build`, and
+`make bootstrap-demo`.
 The integration targets require Docker. Use `make dev RELOAD=1` for automatic
 restart on source and template changes.
 Run the demo only with a disposable instance.
