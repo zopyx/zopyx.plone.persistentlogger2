@@ -22,8 +22,11 @@
           <h1>Logging</h1>
         </header>
         <section class="persistentlogger-toolbar" aria-label="Audit filters">
-          <label for="persistentlogger-quick">Find in stream</label>
-          <input id="persistentlogger-quick" type="search" placeholder="Actor, event type, or comment" autocomplete="off" />
+          <input id="persistentlogger-quick"
+                 type="search"
+                 aria-label="Find in stream"
+                 placeholder="Actor, event type, or comment"
+                 autocomplete="off" />
           <button id="persistentlogger-refresh"
                   type="button"
                   aria-label="Refresh audit events"
