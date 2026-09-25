@@ -1,4 +1,5 @@
 from datetime import UTC, datetime, timedelta
+import logging
 import sys
 from types import SimpleNamespace
 from uuid import uuid4
@@ -325,7 +326,8 @@ def test_browser_retention_views(monkeypatch):
         browser.AuditRetentionDelete(context, Request()).__call__()
 
 
-def test_controlpanel_settings_and_logging(monkeypatch):
+def test_controlpanel_settings_and_logging(monkeypatch, caplog):
+    caplog.set_level(logging.INFO, logger="zopyx.plone.persistentlogger.controlpanel")
     context = SimpleNamespace(portal_type="Document")
     monkeypatch.setattr("zope.component.queryUtility", lambda *_args, **_kwargs: None)
     from zopyx.plone.persistentlogger import controlpanel
@@ -342,6 +344,7 @@ def test_controlpanel_settings_and_logging(monkeypatch):
     monkeypatch.setattr(controlpanel, "getToolByName", lambda *_args: SimpleNamespace(listContentTypes=lambda: ["Document"], get=lambda _: type_info))
     view = controlpanel.AuditLoggingControlPanel(SimpleNamespace(absolute_url=lambda: "http://example/Plone"), Request({"_authenticator": "token"}))
     survey = view.survey()
+    assert "Loading audit control-panel settings" in caplog.text
     assert survey["data"]["backend"] == "zodb"
     assert survey["data"]["audit_logging_enabled"] is True
     assert survey["pages"][0]["elements"][0]["defaultValue"] is True
@@ -365,7 +368,8 @@ def test_controlpanel_settings_and_logging(monkeypatch):
     assert view() == "rendered"
 
 
-def test_controlpanel_save(monkeypatch):
+def test_controlpanel_save(monkeypatch, caplog):
+    caplog.set_level(logging.INFO, logger="zopyx.plone.persistentlogger.controlpanel")
     from io import StringIO
     from zopyx.plone.persistentlogger import controlpanel
 
@@ -386,6 +390,7 @@ def test_controlpanel_save(monkeypatch):
         '{"backend":"rdbms","transaction_mode":"joined","detail_limit":4096,'
         '"enabled_content_types":["Document"],"database_url":"postgresql://db"}'))()
     assert result == ""
+    assert "Saving audit control-panel settings" in caplog.text
     assert settings.backend == "rdbms"
     assert settings.enabled_content_types == {"Document"}
     controlpanel.AuditLoggingControlPanelSave(context, BodyRequest(

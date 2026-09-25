@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from urllib.parse import quote
 
 from Products.CMFCore.utils import getToolByName
@@ -10,6 +11,8 @@ from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
 
 from .errors import ValidationError
 from .interfaces import ISettings
+
+logger = logging.getLogger(__name__)
 
 
 def _registry():
@@ -70,6 +73,14 @@ class AuditLoggingControlPanel:
 
     def survey(self):
         settings = self._settings()
+        logger.info(
+            "Loading audit control-panel settings: enabled=%s backend=%s transaction_mode=%s detail_limit=%s content_types=%s",
+            getattr(settings, "audit_logging_enabled", True),
+            getattr(settings, "backend", None) or "zodb",
+            getattr(settings, "transaction_mode", None) or "outbox",
+            getattr(settings, "detail_limit", 65536),
+            sorted(getattr(settings, "enabled_content_types", ()) or ()),
+        )
         return {
             "title": "Persistent audit logging",
             "showQuestionNumbers": "off",
@@ -155,6 +166,10 @@ class AuditLoggingControlPanelSave:
         settings.detail_limit = detail_limit
         settings.enabled_content_types = set(enabled)
         settings.database_url = str(data.get("database_url", "") or "")
+        logger.info(
+            "Saving audit control-panel settings: enabled=%s backend=%s transaction_mode=%s detail_limit=%s content_types=%s database_url_configured=%s",
+            audit_logging_enabled, backend, transaction_mode, detail_limit, sorted(enabled), bool(settings.database_url),
+        )
         from Products.statusmessages.interfaces import IStatusMessage
         IStatusMessage(self.request).addStatusMessage("Audit logging settings saved.", type="info")
         self.request.response.redirect(f"{self.context.absolute_url()}/@@persistentlogger-controlpanel")
