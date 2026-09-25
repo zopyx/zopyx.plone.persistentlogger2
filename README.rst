@@ -22,7 +22,7 @@ Features
   structured-details popup, and CSV/JSON export;
 * integrity verification, retention previews, legal holds, and governed
   deletion;
-* ZODB storage by default and a SQLite reference adapter for RDBMS work;
+* ZODB storage by default, SQLite for local tests, and PostgreSQL via psycopg;
 * transactional outbox primitives for retry and dead-letter handling.
 
 Plone views
@@ -104,10 +104,13 @@ Install the test environment and run the standard checks::
     make check
     make test
     make coverage
+    make integration
+    make test-postgres
     make build
 
 The test suite uses pytest with branch coverage. CI enforces at least 99%
-coverage and builds the distribution on every push and pull request.
+coverage and builds the distribution on every push and pull request. The
+integration target starts a disposable PostgreSQL container with Testcontainers.
 
 Releases
 --------

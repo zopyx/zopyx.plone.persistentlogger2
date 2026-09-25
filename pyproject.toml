@@ -17,8 +17,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-rdbms = ["sqlalchemy>=2.0"]
+rdbms = ["duckdb>=1.2", "psycopg[binary]>=3.2"]
 test = ["Plone>=6.2,<6.3", "pytest", "pytest-cov", "plone.app.testing"]
+integration = ["psycopg[binary]>=3.2", "testcontainers[postgres]>=4.10"]
 demo = [
   "Plone>=6.2,<6.3",
   "plone.app.contenttypes",
@@ -37,6 +38,9 @@ include = ["zopyx*"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "--strict-markers"
+markers = [
+  "integration: tests requiring Docker or external database services",
+]
 
 [tool.coverage.run]
 branch = true

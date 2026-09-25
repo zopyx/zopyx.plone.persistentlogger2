@@ -16,8 +16,10 @@ Use `uv` for all Python commands. The normal validation command is:
 make check
 ```
 
-Useful targets are `make test`, `make coverage`, `make build`, and
-`make bootstrap-demo`. Run the demo only with a disposable instance.
+Useful targets are `make test`, `make coverage`, `make integration`,
+`make test-postgres`, `make build`, and `make bootstrap-demo`. The integration
+targets require Docker.
+Run the demo only with a disposable instance.
 
 ## Testing expectations
 
@@ -30,6 +32,9 @@ and CSRF checks must have regression coverage.
 Coverage is measured with branch coverage and is enforced by `make coverage`
 and CI. Do not lower the threshold to hide untested code; add a focused test
 or explicitly justify an integration-only exclusion.
+
+The PostgreSQL adapter is verified separately with Testcontainers; do not
+replace that test with SQLite-only assertions.
 
 ## Plone conventions
 
