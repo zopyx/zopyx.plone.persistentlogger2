@@ -3,7 +3,11 @@
   function init() {
     var root = document.getElementById("persistentlogger-controlpanel");
     if (!root || !window.Survey) return;
-    var survey = new Survey.Model(JSON.parse(root.dataset.survey));
+    var definition = JSON.parse(root.dataset.survey);
+    var survey = new Survey.Model(definition);
+    // SurveyJS treats the question definition and answer data separately.
+    // Load the registry-backed values as the current answers.
+    survey.data = definition.data || {};
     survey.onComplete.add(function (sender) {
       fetch(root.dataset.saveUrl, {
         method: "POST",
