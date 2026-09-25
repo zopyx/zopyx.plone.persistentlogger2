@@ -18,7 +18,7 @@ from zopyx.plone.persistentlogger.errors import (
 from zopyx.plone.persistentlogger.models import LegalHold, LogEvent, RetentionPolicy, Severity, utc
 from zopyx.plone.persistentlogger.outbox import Envelope, Outbox
 from zopyx.plone.persistentlogger.rdbms import DuckDBRepository, SQLiteRepository
-from zopyx.plone.persistentlogger.repository import MemoryRepository, object_uid
+from zopyx.plone.persistentlogger.repository import MemoryRepository, ZODBRepository, object_uid
 from zopyx.plone.persistentlogger.serialization import (
     REDACTED,
     bounded_details,
@@ -76,6 +76,8 @@ def test_models_validate_and_serialize():
         LogEvent(comment="x", object_uid="x", severity="invalid")
     with pytest.raises(ValidationError):
         LogEvent(comment="x", object_uid="x", info_url="http://unsafe.example")
+    relative = LogEvent(comment="x", object_uid="x", info_url="/events/1")
+    assert relative.info_url == "/events/1"
     item = LogEvent(comment="x", object_uid="x", severity="warn", occurred_at=NOW)
     assert item.severity is Severity.WARNING
     assert item.to_dict()["event_id"] == str(item.event_id)
@@ -90,7 +92,12 @@ def test_models_validate_and_serialize():
         LegalHold(object_uid="x", reason="", actor="a")
 
 
-def test_object_uid_fallbacks():
+def test_object_uid_fallbacks(monkeypatch):
+    import plone.uuid.interfaces as uuid_interfaces
+
+    with monkeypatch.context() as patcher:
+        patcher.setattr(uuid_interfaces, "IUUID", lambda _context, _default=None: "plone-uuid")
+        assert object_uid(SimpleNamespace(id="id")) == "plone-uuid"
     assert object_uid(SimpleNamespace(object_uid="stable", id="id")) == "stable"
     assert object_uid(SimpleNamespace(__name__="name")) == "name"
     assert object_uid(SimpleNamespace(id="id")) == "id"
@@ -137,6 +144,16 @@ def test_memory_repository_governance_retention_and_holds():
         repo.release_hold(hold.hold_id, actor="admin")
     with pytest.raises(PreviewExpired):
         repo.delete_preview(preview.preview_id, actor="admin", reason="again")
+
+
+def test_zodb_repository_delete_preview_saves():
+    repo = ZODBRepository.__new__(ZODBRepository)
+    MemoryRepository.__init__(repo, "item")
+    saves = []
+    repo._save = lambda: saves.append(True)
+    preview = MemoryRepository.create_preview(repo, actor="admin", now=datetime.now(UTC), ttl_seconds=60)
+    assert ZODBRepository.delete_preview(repo, preview.preview_id, actor="admin", reason="approved")["deleted"] == 0
+    assert saves == [True]
 
 
 def test_hold_conflict_blocks_deletion():
@@ -396,6 +413,9 @@ def test_controlpanel_save(monkeypatch, caplog):
     controlpanel.AuditLoggingControlPanelSave(context, BodyRequest(
         '{"backend":"zodb","transaction_mode":"outbox","detail_limit":65536,'
         '"enabled_content_types":[]}'))()
+    assert settings.enabled_content_types == set()
+    controlpanel.AuditLoggingControlPanelSave(context, BodyRequest(
+        '{"backend":"zodb","transaction_mode":"outbox","enabled_content_types":null}'))()
     assert settings.enabled_content_types == set()
     for payload in ("not-json", '{"audit_logging_enabled":"yes"}', '{"backend":"invalid"}', '{"detail_limit":1}', '{"detail_limit":100001}', '{"detail_limit":"bad"}', '{"enabled_content_types":"Document"}'):
         with pytest.raises(ValidationError):

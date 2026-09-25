@@ -8,7 +8,7 @@ install:
 	$(UV) sync --extra test
 
 test:
-	$(UV) run --extra test --extra rdbms pytest -q --cov=$(PACKAGE) --cov-branch --cov-report=term-missing --cov-report=xml --cov-fail-under=99
+	$(UV) run --extra test --extra rdbms pytest -q --cov=$(PACKAGE) --cov-branch --cov-report=term-missing --cov-report=xml --cov-fail-under=100
 
 integration:
 	$(MAKE) test-rdbms
@@ -28,7 +28,7 @@ dev:
 	fi
 
 coverage:
-	$(UV) run --extra test pytest --cov=$(PACKAGE) --cov-branch --cov-report=term-missing --cov-report=xml --cov-fail-under=99
+	$(UV) run --extra test pytest --cov=$(PACKAGE) --cov-branch --cov-report=term-missing --cov-report=xml --cov-fail-under=100
 
 check:
 	$(UV) run python -m compileall -q zopyx scripts
