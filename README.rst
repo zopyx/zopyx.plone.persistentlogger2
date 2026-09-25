@@ -45,9 +45,11 @@ Configuration
 -------------
 
 Open ``@@persistentlogger-controlpanel`` as a site manager and select the
-content types that should be logged. Logging is disabled for all types until
-explicitly enabled. The optional database URL is stored as a password-style
-control-panel field and is never returned by health responses.
+content types that should be logged. The settings page is rendered with the
+SurveyJS 3 Form Library and saved through a CSRF-protected JSON endpoint.
+Logging is disabled for all types until explicitly enabled. The optional
+database URL is stored as a password-style control-panel field and is never
+returned by health responses.
 
 Application API
 ---------------

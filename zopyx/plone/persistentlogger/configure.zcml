@@ -5,6 +5,7 @@
   <subscriber for="Products.CMFCore.interfaces.IContentish zope.lifecycleevent.interfaces.IObjectAddedEvent" handler=".subscribers.log_added" />
   <subscriber for="Products.CMFCore.interfaces.IContentish zope.lifecycleevent.interfaces.IObjectModifiedEvent" handler=".subscribers.log_modified" />
   <browser:page name="persistentlogger-controlpanel" for="Products.CMFCore.interfaces.ISiteRoot" permission="cmf.ManagePortal" class=".controlpanel.AuditLoggingControlPanel" />
+  <browser:page name="persistentlogger-controlpanel-save" for="Products.CMFCore.interfaces.ISiteRoot" permission="cmf.ManagePortal" class=".controlpanel.AuditLoggingControlPanelSave" />
   <browser:page name="persistentlogger-enabled" for="*" permission="zope2.View" class=".controlpanel.LoggingEnabled" />
   <browser:page name="persistent-log" for="*" permission="zopyx.plone.persistentlogger.view_audit_log" class=".browser.AuditLog" />
   <browser:page name="persistent-log-data" for="*" permission="zopyx.plone.persistentlogger.view_audit_log" class=".browser.AuditData" />

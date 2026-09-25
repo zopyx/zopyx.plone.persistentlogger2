@@ -16,7 +16,7 @@ from zopyx.plone.persistentlogger.errors import (
 )
 from zopyx.plone.persistentlogger.models import LegalHold, LogEvent, RetentionPolicy, Severity, utc
 from zopyx.plone.persistentlogger.outbox import Envelope, Outbox
-from zopyx.plone.persistentlogger.rdbms import SQLiteRepository
+from zopyx.plone.persistentlogger.rdbms import DuckDBRepository, SQLiteRepository
 from zopyx.plone.persistentlogger.repository import MemoryRepository, object_uid
 from zopyx.plone.persistentlogger.serialization import (
     REDACTED,
@@ -334,12 +334,51 @@ def test_controlpanel_settings_and_logging(monkeypatch):
     assert controlpanel.enabled_content_types(context) == {"Document"}
     assert controlpanel.logging_enabled(context)
     assert controlpanel.LoggingEnabled(context, Request())()
-    form = object.__new__(controlpanel.AuditLoggingEditForm)
-    form.fields = {"enabled_content_types": SimpleNamespace(), "database_url": SimpleNamespace()}
-    monkeypatch.setattr(controlpanel.controlpanel.RegistryEditForm, "updateFields", lambda self: None)
-    form.updateFields()
-    assert form.fields["enabled_content_types"].widgetFactory is controlpanel.OrderedSelectFieldWidget
-    assert form.fields["database_url"].widgetFactory is controlpanel.PasswordFieldWidget
+    settings = SimpleNamespace(backend="zodb", transaction_mode="outbox", detail_limit=65536,
+                               enabled_content_types={"Document"}, database_url="")
+    monkeypatch.setattr("zope.component.queryUtility", lambda *_args, **_kwargs: SimpleNamespace(forInterface=lambda *_a, **_kw: settings))
+    type_info = SimpleNamespace(Title=lambda: "Document")
+    monkeypatch.setattr(controlpanel, "getToolByName", lambda *_args: SimpleNamespace(listContentTypes=lambda: ["Document"], get=lambda _: type_info))
+    view = controlpanel.AuditLoggingControlPanel(SimpleNamespace(absolute_url=lambda: "http://example/Plone"), Request({"_authenticator": "token"}))
+    survey = view.survey()
+    assert survey["data"]["enabled_content_types"] == ["Document"]
+    assert view.save_url.endswith("_authenticator=token")
+    monkeypatch.setattr("plone.protect.createToken", lambda: "generated")
+    no_token_view = controlpanel.AuditLoggingControlPanel(view.context, Request())
+    assert no_token_view.save_url.endswith("_authenticator=generated")
+    view.index = lambda: "rendered"
+    assert view() == "rendered"
+
+
+def test_controlpanel_save(monkeypatch):
+    from io import StringIO
+    from zopyx.plone.persistentlogger import controlpanel
+
+    settings = SimpleNamespace()
+    registry = SimpleNamespace(forInterface=lambda *_args, **_kwargs: settings)
+    monkeypatch.setattr(controlpanel, "_registry", lambda: registry)
+
+    class BodyRequest(Request):
+        method = "POST"
+        def __init__(self, payload):
+            super().__init__()
+            self.stdin = StringIO(payload)
+
+    context = SimpleNamespace()
+    result = controlpanel.AuditLoggingControlPanelSave(context, BodyRequest(
+        '{"backend":"rdbms","transaction_mode":"joined","detail_limit":4096,'
+        '"enabled_content_types":["Document"],"database_url":"postgresql://db"}'))()
+    assert result == '{"ok": true}'
+    assert settings.backend == "rdbms"
+    assert settings.enabled_content_types == {"Document"}
+    for payload in ("not-json", '{"backend":"invalid"}', '{"detail_limit":1}', '{"detail_limit":"bad"}', '{"enabled_content_types":"Document"}'):
+        with pytest.raises(ValidationError):
+            controlpanel.AuditLoggingControlPanelSave(context, BodyRequest(payload))()
+    monkeypatch.setattr(controlpanel, "_registry", lambda: None)
+    with pytest.raises(ValidationError):
+        controlpanel.AuditLoggingControlPanelSave(context, BodyRequest("{}"))()
+    with pytest.raises(ValidationError):
+        controlpanel.AuditLoggingControlPanelSave(context, Request())()
 
 
 def test_subscriber_lifecycle_paths(monkeypatch):
@@ -458,6 +497,11 @@ def test_outbox_and_sqlite_edges(tmp_path):
     repo = SQLiteRepository("item", str(tmp_path / "x.sqlite"), transaction_mode="independent")
     assert repo.health()["transaction_mode"] == "independent"
     repo.close()
+
+
+def test_duckdb_rejects_invalid_transaction_mode():
+    with pytest.raises(ConfigurationError):
+        DuckDBRepository("item", transaction_mode="invalid")
 
 
 def test_remaining_defensive_branches(monkeypatch, tmp_path):
