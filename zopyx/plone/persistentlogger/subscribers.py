@@ -13,15 +13,27 @@ from .serialization import normalize
 _WRITING_AUDIT = ContextVar("zopyx.plone.persistentlogger.writing", default=False)
 
 _METADATA_FIELDS = (
-    "title", "description", "subject", "language", "rights", "effective",
-    "expiration", "creators", "contributors", "location", "exclude_from_nav",
-    "allowDiscussion", "layout", "short_name",
+    "title",
+    "description",
+    "subject",
+    "language",
+    "rights",
+    "effective",
+    "expiration",
+    "creators",
+    "contributors",
+    "location",
+    "exclude_from_nav",
+    "allowDiscussion",
+    "layout",
+    "short_name",
 )
 
 
 def _actor() -> str:
     try:
         import plone.api
+
         user = plone.api.user.get_current()
         return user.getUserName() if user else "system"
     except Exception:
@@ -43,7 +55,11 @@ def _metadata_snapshot(context: Any) -> dict[str, Any]:
     }
     for name in _METADATA_FIELDS:
         try:
-            value = context.get(name) if hasattr(context, "get") else getattr(context, name, None)
+            value = (
+                context.get(name)
+                if hasattr(context, "get")
+                else getattr(context, name, None)
+            )
             if value is None:
                 value = getattr(context, name, None)
         except Exception:
@@ -57,7 +73,9 @@ def _metadata_snapshot(context: Any) -> dict[str, Any]:
 def _previous_snapshot(context: Any) -> dict[str, Any] | None:
     for row in search_events(context, limit=1000, sort="desc"):
         details = row.get("details")
-        if isinstance(details, dict) and isinstance(details.get("snapshot_after"), dict):
+        if isinstance(details, dict) and isinstance(
+            details.get("snapshot_after"), dict
+        ):
             return details["snapshot_after"]
     return None
 
@@ -79,7 +97,9 @@ def _historical_snapshot(context: Any) -> dict[str, Any] | None:
         return None
 
 
-def _metadata_diff(before: dict[str, Any] | None, after: dict[str, Any]) -> dict[str, Any]:
+def _metadata_diff(
+    before: dict[str, Any] | None, after: dict[str, Any]
+) -> dict[str, Any]:
     if before is None:
         return {
             "baseline_available": False,
@@ -102,7 +122,9 @@ def _metadata_diff(before: dict[str, Any] | None, after: dict[str, Any]) -> dict
     }
 
 
-def _event_details(context: Any, *, before: dict[str, Any] | None = None) -> dict[str, Any]:
+def _event_details(
+    context: Any, *, before: dict[str, Any] | None = None
+) -> dict[str, Any]:
     snapshot = _metadata_snapshot(context)
     return {
         "portal_type": snapshot["portal_type"],

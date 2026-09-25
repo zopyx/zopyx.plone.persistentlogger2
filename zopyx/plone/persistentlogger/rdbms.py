@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
@@ -21,7 +20,13 @@ from .repository import MemoryRepository
 class SQLiteRepository(MemoryRepository):
     backend = "rdbms"
 
-    def __init__(self, object_uid_value: str, database: str = ":memory:", *, transaction_mode: str = "outbox"):
+    def __init__(
+        self,
+        object_uid_value: str,
+        database: str = ":memory:",
+        *,
+        transaction_mode: str = "outbox",
+    ):
         if transaction_mode not in {"joined", "outbox", "independent"}:
             raise ConfigurationError("invalid RDBMS transaction mode")
         self.transaction_mode = transaction_mode
@@ -85,26 +90,57 @@ class SQLiteRepository(MemoryRepository):
                 integrity_digest TEXT NOT NULL
             );
         """)
-        if self.connection.execute("SELECT COUNT(*) AS count FROM audit_schema_version").fetchone()["count"] == 0:
-            self.connection.execute("INSERT INTO audit_schema_version(version) VALUES (1)")
+        if (
+            self.connection.execute(
+                "SELECT COUNT(*) AS count FROM audit_schema_version"
+            ).fetchone()["count"]
+            == 0
+        ):
+            self.connection.execute(
+                "INSERT INTO audit_schema_version(version) VALUES (1)"
+            )
         self.connection.commit()
 
     def _load(self) -> None:
-        rows = self.connection.execute("SELECT * FROM audit_event WHERE object_uid = ? ORDER BY sequence", (self.object_uid,)).fetchall()
+        rows = self.connection.execute(
+            "SELECT * FROM audit_event WHERE object_uid = ? ORDER BY sequence",
+            (self.object_uid,),
+        ).fetchall()
         self._events = []
         for row in rows:
             item = dict(row)
-            item["details"] = json.loads(item["details"]) if item["details"] is not None else None
+            item["details"] = (
+                json.loads(item["details"]) if item["details"] is not None else None
+            )
             self._events.append(item)
 
     def _persist_events(self) -> None:
-        self.connection.execute("DELETE FROM audit_event WHERE object_uid = ?", (self.object_uid,))
+        self.connection.execute(
+            "DELETE FROM audit_event WHERE object_uid = ?", (self.object_uid,)
+        )
         for row in self._events:
-            self.connection.execute("""INSERT INTO audit_event
+            self.connection.execute(
+                """INSERT INTO audit_event
                 (object_uid,event_id,created_at,occurred_at,actor,event_type,severity,target,comment,info_url,details,schema_version,sequence,previous_digest,integrity_digest)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""", (
-                    self.object_uid, row["event_id"], row["created_at"], row["occurred_at"], row["actor"], row["event_type"], row["severity"], row["target"], row["comment"], row["info_url"], json.dumps(row["details"], ensure_ascii=False, sort_keys=True), row["schema_version"], row["sequence"], row["previous_digest"], row["integrity_digest"],
-                ))
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                (
+                    self.object_uid,
+                    row["event_id"],
+                    row["created_at"],
+                    row["occurred_at"],
+                    row["actor"],
+                    row["event_type"],
+                    row["severity"],
+                    row["target"],
+                    row["comment"],
+                    row["info_url"],
+                    json.dumps(row["details"], ensure_ascii=False, sort_keys=True),
+                    row["schema_version"],
+                    row["sequence"],
+                    row["previous_digest"],
+                    row["integrity_digest"],
+                ),
+            )
         self.connection.commit()
 
     def append(self, event: LogEvent) -> dict[str, Any]:
@@ -112,26 +148,37 @@ class SQLiteRepository(MemoryRepository):
         self._persist_events()
         return result
 
-    def delete_preview(self, preview_id: UUID | str, *, actor: str, reason: str) -> dict[str, Any]:
+    def delete_preview(
+        self, preview_id: UUID | str, *, actor: str, reason: str
+    ) -> dict[str, Any]:
         result = super().delete_preview(preview_id, actor=actor, reason=reason)
         self._persist_events()
         return result
 
     def health(self) -> dict[str, Any]:
         result = super().health()
-        result.update(schema_version=self.connection.execute("SELECT MAX(version) AS max_version FROM audit_schema_version").fetchone()["max_version"], transaction_mode=self.transaction_mode)
+        result.update(
+            schema_version=self.connection.execute(
+                "SELECT MAX(version) AS max_version FROM audit_schema_version"
+            ).fetchone()["max_version"],
+            transaction_mode=self.transaction_mode,
+        )
         return result
 
     def close(self) -> None:
         self.connection.close()
 
 
-class PostgresRepository(MemoryRepository):  # pragma: no cover - exercised by the Docker integration suite
+class PostgresRepository(
+    MemoryRepository
+):  # pragma: no cover - exercised by the Docker integration suite
     """PostgreSQL adapter using psycopg 3 and the shared repository contract."""
 
     backend = "rdbms"
 
-    def __init__(self, object_uid_value: str, database: str, *, transaction_mode: str = "joined"):
+    def __init__(
+        self, object_uid_value: str, database: str, *, transaction_mode: str = "joined"
+    ):
         if transaction_mode not in {"joined", "outbox", "independent"}:
             raise ConfigurationError("invalid RDBMS transaction mode")
         try:
@@ -140,7 +187,9 @@ class PostgresRepository(MemoryRepository):  # pragma: no cover - exercised by t
         except ImportError as exc:  # pragma: no cover - optional dependency
             raise ConfigurationError("PostgreSQL support requires psycopg") from exc
         self.transaction_mode = transaction_mode
-        database = database.replace("postgresql+psycopg2://", "postgresql://").replace("postgresql+psycopg://", "postgresql://")
+        database = database.replace("postgresql+psycopg2://", "postgresql://").replace(
+            "postgresql+psycopg://", "postgresql://"
+        )
         self.connection = psycopg.connect(database, row_factory=dict_row)
         self._create_schema()
         super().__init__(object_uid_value)
@@ -160,8 +209,15 @@ class PostgresRepository(MemoryRepository):  # pragma: no cover - exercised by t
             CREATE INDEX IF NOT EXISTS audit_event_object_time
                 ON audit_event (object_uid, created_at DESC, sequence DESC, event_id);
         """)
-        if self.connection.execute("SELECT COUNT(*) AS count FROM audit_schema_version").fetchone()["count"] == 0:
-            self.connection.execute("INSERT INTO audit_schema_version(version) VALUES (1)")
+        if (
+            self.connection.execute(
+                "SELECT COUNT(*) AS count FROM audit_schema_version"
+            ).fetchone()["count"]
+            == 0
+        ):
+            self.connection.execute(
+                "INSERT INTO audit_schema_version(version) VALUES (1)"
+            )
         self.connection.commit()
 
     def _load(self) -> None:
@@ -175,18 +231,32 @@ class PostgresRepository(MemoryRepository):  # pragma: no cover - exercised by t
             self._events.append(item)
 
     def _persist_events(self) -> None:
-        self.connection.execute("DELETE FROM audit_event WHERE object_uid = %s", (self.object_uid,))
+        self.connection.execute(
+            "DELETE FROM audit_event WHERE object_uid = %s", (self.object_uid,)
+        )
         for row in self._events:
             self.connection.execute(
                 """INSERT INTO audit_event
                 (object_uid,event_id,created_at,occurred_at,actor,event_type,severity,target,
                  comment,info_url,details,schema_version,sequence,previous_digest,integrity_digest)
                 VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
-                (self.object_uid, row["event_id"], row["created_at"], row["occurred_at"],
-                 row["actor"], row["event_type"], row["severity"], row["target"],
-                 row["comment"], row["info_url"], json.dumps(row["details"], ensure_ascii=False),
-                 row["schema_version"], row["sequence"], row["previous_digest"],
-                 row["integrity_digest"]),
+                (
+                    self.object_uid,
+                    row["event_id"],
+                    row["created_at"],
+                    row["occurred_at"],
+                    row["actor"],
+                    row["event_type"],
+                    row["severity"],
+                    row["target"],
+                    row["comment"],
+                    row["info_url"],
+                    json.dumps(row["details"], ensure_ascii=False),
+                    row["schema_version"],
+                    row["sequence"],
+                    row["previous_digest"],
+                    row["integrity_digest"],
+                ),
             )
         self.connection.commit()
 
@@ -195,14 +265,21 @@ class PostgresRepository(MemoryRepository):  # pragma: no cover - exercised by t
         self._persist_events()
         return result
 
-    def delete_preview(self, preview_id: UUID | str, *, actor: str, reason: str) -> dict[str, Any]:
+    def delete_preview(
+        self, preview_id: UUID | str, *, actor: str, reason: str
+    ) -> dict[str, Any]:
         result = super().delete_preview(preview_id, actor=actor, reason=reason)
         self._persist_events()
         return result
 
     def health(self) -> dict[str, Any]:
         result = super().health()
-        result.update(schema_version=self.connection.execute("SELECT MAX(version) AS max_version FROM audit_schema_version").fetchone()["max_version"], transaction_mode=self.transaction_mode)
+        result.update(
+            schema_version=self.connection.execute(
+                "SELECT MAX(version) AS max_version FROM audit_schema_version"
+            ).fetchone()["max_version"],
+            transaction_mode=self.transaction_mode,
+        )
         return result
 
     def close(self) -> None:
@@ -214,7 +291,13 @@ class DuckDBRepository(MemoryRepository):
 
     backend = "rdbms"
 
-    def __init__(self, object_uid_value: str, database: str = ":memory:", *, transaction_mode: str = "independent"):
+    def __init__(
+        self,
+        object_uid_value: str,
+        database: str = ":memory:",
+        *,
+        transaction_mode: str = "independent",
+    ):
         if transaction_mode not in {"joined", "outbox", "independent"}:
             raise ConfigurationError("invalid RDBMS transaction mode")
         try:
@@ -241,24 +324,42 @@ class DuckDBRepository(MemoryRepository):
 
     def _load(self) -> None:
         cursor = self.connection.execute(
-            "SELECT * FROM audit_event WHERE object_uid = ? ORDER BY sequence", (self.object_uid,)
+            "SELECT * FROM audit_event WHERE object_uid = ? ORDER BY sequence",
+            (self.object_uid,),
         )
         columns = [item[0] for item in cursor.description]
         self._events = []
         for values in cursor.fetchall():
             item = dict(zip(columns, values))
-            item["details"] = json.loads(item["details"]) if item["details"] is not None else None
+            item["details"] = (
+                json.loads(item["details"]) if item["details"] is not None else None
+            )
             self._events.append(item)
 
     def _persist_events(self) -> None:
-        self.connection.execute("DELETE FROM audit_event WHERE object_uid = ?", (self.object_uid,))
+        self.connection.execute(
+            "DELETE FROM audit_event WHERE object_uid = ?", (self.object_uid,)
+        )
         for row in self._events:
             self.connection.execute(
                 """INSERT INTO audit_event VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                (self.object_uid, row["event_id"], row["created_at"], row["occurred_at"], row["actor"],
-                 row["event_type"], row["severity"], row["target"], row["comment"], row["info_url"],
-                 json.dumps(row["details"], ensure_ascii=False), row["schema_version"], row["sequence"],
-                 row["previous_digest"], row["integrity_digest"]),
+                (
+                    self.object_uid,
+                    row["event_id"],
+                    row["created_at"],
+                    row["occurred_at"],
+                    row["actor"],
+                    row["event_type"],
+                    row["severity"],
+                    row["target"],
+                    row["comment"],
+                    row["info_url"],
+                    json.dumps(row["details"], ensure_ascii=False),
+                    row["schema_version"],
+                    row["sequence"],
+                    row["previous_digest"],
+                    row["integrity_digest"],
+                ),
             )
 
     def append(self, event: LogEvent) -> dict[str, Any]:

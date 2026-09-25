@@ -34,7 +34,9 @@ class Outbox:
     def enqueue(self, item: Envelope) -> Envelope:
         return self.items.setdefault(item.idempotency_key, item)
 
-    def deliver(self, send: Callable[[Envelope], None], now: datetime | None = None) -> dict[str, int]:
+    def deliver(
+        self, send: Callable[[Envelope], None], now: datetime | None = None
+    ) -> dict[str, int]:
         now = now or datetime.now(UTC)
         result = {"delivered": 0, "failed": 0, "dead_letter": 0}
         for item in list(self.items.values()):
@@ -50,7 +52,9 @@ class Outbox:
                     item.dead_letter = True
                     result["dead_letter"] += 1
                 else:
-                    item.next_attempt_at = now + timedelta(seconds=min(3600, 2 ** item.attempt_count))
+                    item.next_attempt_at = now + timedelta(
+                        seconds=min(3600, 2**item.attempt_count)
+                    )
             else:
                 result["delivered"] += 1
                 del self.items[item.idempotency_key]

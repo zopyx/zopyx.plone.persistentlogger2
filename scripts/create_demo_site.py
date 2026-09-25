@@ -32,14 +32,19 @@ def get_or_create_site(root):
         root,
         SITE_ID,
         title=SITE_TITLE,
-        extension_ids=["plone.app.contenttypes:default", "zopyx.plone.persistentlogger:default"],
+        extension_ids=[
+            "plone.app.contenttypes:default",
+            "zopyx.plone.persistentlogger:default",
+        ],
     ), True
 
 
 def activate_addon(site):
     setup = site.portal_setup
     for profile in (CONTENT_PROFILE, THEME_PROFILE, ADDON_PROFILE):
-        if setup.getLastVersionForProfile(profile) != setup.getVersionForProfile(profile):
+        if setup.getLastVersionForProfile(profile) != setup.getVersionForProfile(
+            profile
+        ):
             setup.runAllImportStepsFromProfile(profile)
 
 

@@ -4,26 +4,39 @@ from datetime import UTC, datetime
 import pytest
 
 from zopyx.plone.persistentlogger.models import LogEvent
-from zopyx.plone.persistentlogger.rdbms import DuckDBRepository, PostgresRepository, SQLiteRepository
+from zopyx.plone.persistentlogger.rdbms import (
+    DuckDBRepository,
+    PostgresRepository,
+    SQLiteRepository,
+)
 
 
 pytestmark = pytest.mark.integration
 
 
 def make_event(comment="contract event"):
-    return LogEvent(comment=comment, object_uid="contract", actor="tester", created_at=datetime.now(UTC))
+    return LogEvent(
+        comment=comment,
+        object_uid="contract",
+        actor="tester",
+        created_at=datetime.now(UTC),
+    )
 
 
 @pytest.fixture(scope="module", params=["sqlite", "duckdb", "postgres"])
 def backend(request, tmp_path_factory):
     name = request.param
     if name == "sqlite":
-        repository = SQLiteRepository("contract", str(tmp_path_factory.mktemp("sqlite") / "audit.sqlite"))
+        repository = SQLiteRepository(
+            "contract", str(tmp_path_factory.mktemp("sqlite") / "audit.sqlite")
+        )
         yield name, repository
         repository.close()
         return
     if name == "duckdb":
-        repository = DuckDBRepository("contract", str(tmp_path_factory.mktemp("duckdb") / "audit.duckdb"))
+        repository = DuckDBRepository(
+            "contract", str(tmp_path_factory.mktemp("duckdb") / "audit.duckdb")
+        )
         yield name, repository
         repository.close()
         return
@@ -52,7 +65,10 @@ def test_backend_reopens_persisted_events(backend, tmp_path):
     row = repository.append(make_event("persisted"))
     assert repository.get(row["event_id"])["comment"] == "persisted"
     if name == "sqlite":
-        replacement = SQLiteRepository("contract", repository.connection.execute("PRAGMA database_list").fetchone()[2])
+        replacement = SQLiteRepository(
+            "contract",
+            repository.connection.execute("PRAGMA database_list").fetchone()[2],
+        )
         assert replacement.search(quick="persisted")
         replacement.close()
     elif name == "duckdb":
