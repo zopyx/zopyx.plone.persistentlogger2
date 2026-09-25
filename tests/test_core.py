@@ -341,10 +341,13 @@ def test_controlpanel_settings_and_logging(monkeypatch):
     monkeypatch.setattr(controlpanel, "getToolByName", lambda *_args: SimpleNamespace(listContentTypes=lambda: ["Document"], get=lambda _: type_info))
     view = controlpanel.AuditLoggingControlPanel(SimpleNamespace(absolute_url=lambda: "http://example/Plone"), Request({"_authenticator": "token"}))
     survey = view.survey()
+    assert survey["data"]["backend"] == "zodb"
+    assert survey["pages"][0]["elements"][0]["elements"][0]["defaultValue"] == "zodb"
     assert survey["data"]["enabled_content_types"] == ["Document"]
-    database_question = next(item for item in survey["pages"][0]["elements"] if item["name"] == "database_url")
+    questions = [item for panel in survey["pages"][0]["elements"] for item in panel["elements"]]
+    database_question = next(item for item in questions if item["name"] == "database_url")
     assert database_question["visibleIf"] == "{backend} = 'rdbms'"
-    content_types_question = next(item for item in survey["pages"][0]["elements"] if item["name"] == "enabled_content_types")
+    content_types_question = next(item for item in questions if item["name"] == "enabled_content_types")
     assert content_types_question["colCount"] == 3
     assert view.save_url.endswith("_authenticator=token")
     monkeypatch.setattr("plone.protect.createToken", lambda: "generated")
