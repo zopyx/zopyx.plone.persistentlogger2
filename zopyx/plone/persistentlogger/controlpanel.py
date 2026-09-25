@@ -91,7 +91,7 @@ class AuditLoggingControlPanel:
                 {"type": "panel", "name": "logging_settings", "title": "Logging", "elements": [
                     {"type": "text", "name": "detail_limit", "title": "Detail byte limit", "inputType": "number",
                      "description": "Maximum UTF-8 size of serialized event details; larger details are rejected.",
-                     "min": 1024, "max": 1048576, "isRequired": True},
+                     "min": 1024, "max": 100000, "isRequired": True},
                     {"type": "checkbox", "name": "enabled_content_types", "title": "Content types with audit logging",
                      "description": "Select the Plone content types whose lifecycle events should be logged.",
                      "colCount": 3, "choices": self._content_type_choices()},
@@ -141,7 +141,7 @@ class AuditLoggingControlPanelSave:
             detail_limit = int(data.get("detail_limit", 65536))
         except (TypeError, ValueError) as exc:
             raise ValidationError("detail_limit must be an integer") from exc
-        if not 1024 <= detail_limit <= 1048576:
+        if not 1024 <= detail_limit <= 100000:
             raise ValidationError("detail_limit is out of bounds")
         enabled = data.get("enabled_content_types", [])
         if enabled is None:

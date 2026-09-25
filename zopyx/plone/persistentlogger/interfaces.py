@@ -9,7 +9,7 @@ class ISettings(Interface):
     )
     backend = schema.Choice(title="Backend", values=("zodb", "rdbms"), default="zodb")
     transaction_mode = schema.Choice(title="Transaction mode", values=("joined", "outbox", "independent"), default="outbox")
-    detail_limit = schema.Int(title="Detail byte limit", default=65536, min=1024, max=1048576)
+    detail_limit = schema.Int(title="Detail byte limit", default=65536, min=1024, max=100000)
     enabled_content_types = schema.Set(
         title="Content types with audit logging",
         description="Select the Plone content types whose lifecycle events should be logged.",

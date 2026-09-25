@@ -391,7 +391,7 @@ def test_controlpanel_save(monkeypatch):
         '{"backend":"zodb","transaction_mode":"outbox","detail_limit":65536,'
         '"enabled_content_types":[]}'))()
     assert settings.enabled_content_types == set()
-    for payload in ("not-json", '{"audit_logging_enabled":"yes"}', '{"backend":"invalid"}', '{"detail_limit":1}', '{"detail_limit":"bad"}', '{"enabled_content_types":"Document"}'):
+    for payload in ("not-json", '{"audit_logging_enabled":"yes"}', '{"backend":"invalid"}', '{"detail_limit":1}', '{"detail_limit":100001}', '{"detail_limit":"bad"}', '{"enabled_content_types":"Document"}'):
         with pytest.raises(ValidationError):
             controlpanel.AuditLoggingControlPanelSave(context, BodyRequest(payload))()
     monkeypatch.setattr(controlpanel, "_registry", lambda: None)
