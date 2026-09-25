@@ -86,6 +86,12 @@
       if (value) element.removeAttribute("hidden");
       else element.setAttribute("hidden", "hidden");
     }
+    function updateEmptyState() {
+      if (!gridApi) return;
+      var noRowsVisible = gridApi.getDisplayedRowCount() === 0;
+      empty.textContent = search.value.trim() ? "No matching data found" : "No audit events match this stream.";
+      visible(empty, noRowsVisible);
+    }
     function setState(message, isError) {
       status.textContent = message;
       visible(error, isError);
@@ -108,12 +114,12 @@
       window.location.href = exportEndpoint + "?" + params.toString();
     }
     var columnDefs = [
-      { field: "created_at", headerName: "Recorded", minWidth: 210, sort: "desc", valueFormatter: function (params) { return localTime(params.value); } },
-      { field: "severity", headerName: "Level", width: 110 },
-      { field: "event_type", headerName: "Event", minWidth: 200, flex: 1 },
-      { field: "actor", headerName: "Actor", minWidth: 150 },
-      { field: "comment", headerName: "Summary", minWidth: 260, flex: 1 },
-      { field: "details", headerName: "Details", minWidth: 150, cellRenderer: function (params) {
+      { field: "created_at", headerName: "Recorded", width: 220, minWidth: 190, sort: "desc", valueFormatter: function (params) { return localTime(params.value); } },
+      { field: "severity", headerName: "Level", width: 90 },
+      { field: "event_type", headerName: "Event", minWidth: 180, flex: 1 },
+      { field: "actor", headerName: "Actor", width: 160, minWidth: 130 },
+      { field: "comment", headerName: "Summary", minWidth: 220, flex: 2 },
+      { field: "details", headerName: "Details", width: 76, minWidth: 76, maxWidth: 90, sortable: false, filter: false, cellRenderer: function (params) {
         var button = document.createElement("button");
         button.type = "button";
         button.className = "persistentlogger-details-button";
@@ -131,7 +137,12 @@
         setState("The audit table could not start: " + (reason.message || "unknown grid error"), true);
         return;
       }
-      search.addEventListener("input", function () { if (gridApi) gridApi.setGridOption("quickFilterText", search.value); });
+      gridApi.addEventListener("modelUpdated", updateEmptyState);
+      search.addEventListener("input", function () {
+        if (!gridApi) return;
+        gridApi.setGridOption("quickFilterText", search.value);
+        window.setTimeout(updateEmptyState, 0);
+      });
       document.getElementById("persistentlogger-refresh").addEventListener("click", load);
       exportJson.addEventListener("click", function () { exportEvents("json"); });
       exportCsv.addEventListener("click", function () { exportEvents("csv"); });
