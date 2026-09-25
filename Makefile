@@ -2,7 +2,7 @@ PYTHON ?= 3.12
 UV ?= uv
 PACKAGE := zopyx.plone.persistentlogger
 
-.PHONY: install test integration test-postgres coverage check build clean bootstrap-demo
+.PHONY: install test integration test-postgres dev coverage check build clean bootstrap-demo
 
 install:
 	$(UV) sync --extra test
@@ -15,6 +15,14 @@ integration:
 
 test-postgres:
 	RUN_INTEGRATION=1 $(UV) run --extra test --extra rdbms --extra integration pytest -q -m integration -k postgres tests/test_rdbms_contract.py
+
+dev:
+	@test -f instance/etc/zope.ini || { echo "Run 'make bootstrap-demo' first." >&2; exit 1; }
+	@if [ "$(RELOAD)" = "1" ]; then \
+		$(UV) run --extra demo --extra dev watchfiles --filter all "$(UV) run runwsgi -v -d instance/etc/zope.ini" zopyx scripts; \
+	else \
+		$(UV) run --extra demo runwsgi -v -d instance/etc/zope.ini; \
+	fi
 
 coverage:
 	$(UV) run --extra test pytest --cov=$(PACKAGE) --cov-branch --cov-report=term-missing --cov-report=xml --cov-fail-under=99

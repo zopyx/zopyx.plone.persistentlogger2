@@ -20,6 +20,7 @@ dependencies = [
 rdbms = ["duckdb>=1.2", "psycopg[binary]>=3.2"]
 test = ["Plone>=6.2,<6.3", "pytest", "pytest-cov", "plone.app.testing"]
 integration = ["psycopg[binary]>=3.2", "testcontainers[postgres]>=4.10"]
+dev = ["watchfiles>=1.0"]
 demo = [
   "Plone>=6.2,<6.3",
   "plone.app.contenttypes",

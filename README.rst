@@ -92,6 +92,14 @@ Start the generated instance with the command printed by the script, or::
 
     uv run runwsgi -v instance/etc/zope.ini
 
+For foreground development mode use::
+
+    make dev
+    make dev RELOAD=1
+
+The reload mode uses ``watchfiles`` to restart the WSGI process when project
+files change.
+
 The default development credentials are ``admin`` / ``admin``.  Override
 ``PLONE_PASSWORD`` before bootstrapping when using a non-disposable instance.
 
