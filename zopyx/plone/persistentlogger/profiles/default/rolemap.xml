@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<rolemap>
+  <permissions>
+    <permission name="View audit log" acquire="True"><role name="Manager" /><role name="Site Administrator" /></permission>
+    <permission name="Search audit logs" acquire="True"><role name="Manager" /><role name="Site Administrator" /></permission>
+    <permission name="Export audit log" acquire="True"><role name="Manager" /><role name="Site Administrator" /></permission>
+    <permission name="Manage audit retention" acquire="True"><role name="Manager" /><role name="Site Administrator" /></permission>
+    <permission name="Preview audit deletion" acquire="True"><role name="Manager" /><role name="Site Administrator" /></permission>
+    <permission name="Execute audit deletion" acquire="True"><role name="Manager" /><role name="Site Administrator" /></permission>
+    <permission name="Manage legal holds" acquire="True"><role name="Manager" /><role name="Site Administrator" /></permission>
+    <permission name="Verify audit integrity" acquire="True"><role name="Manager" /><role name="Site Administrator" /></permission>
+  </permissions>
+</rolemap>

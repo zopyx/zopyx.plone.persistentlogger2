@@ -1,0 +1,83 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal"
+      metal:use-macro="context/main_template/macros/master">
+  <metal:block fill-slot="head_slot">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@34.0.0/styles/ag-grid.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@34.0.0/styles/ag-theme-quartz.css" />
+    <link rel="stylesheet" href="++resource++persistentlogger/audit_log.css?v=12" />
+  </metal:block>
+
+  <metal:block fill-slot="javascript_head_slot">
+    <script src="https://cdn.jsdelivr.net/npm/ag-grid-community@34.0.0/dist/ag-grid-community.min.js"></script>
+    <script src="++resource++persistentlogger/audit_log.js?v=12"></script>
+  </metal:block>
+
+  <body>
+    <metal:block fill-slot="main">
+      <main id="persistentlogger-app"
+            class="persistentlogger-shell"
+            tal:attributes="data-endpoint view/data_url; data-export-endpoint view/export_url; data-timezone view/timezone">
+        <section class="persistentlogger-toolbar" aria-label="Audit filters">
+          <label for="persistentlogger-quick">Find in stream</label>
+          <input id="persistentlogger-quick" type="search" placeholder="Actor, event type, or comment" autocomplete="off" />
+          <button id="persistentlogger-refresh"
+                  type="button"
+                  aria-label="Refresh audit events"
+                  title="Refresh audit events">
+            <span class="visually-hidden">Refresh audit events</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" width="18" height="18">
+              <path d="M20 11a8 8 0 0 0-14.8-4L3 9m0 0V4m0 5h5M4 13a8 8 0 0 0 14.8 4L21 15m0 0v5m0-5h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </button>
+          <span class="persistentlogger-export-actions" aria-label="Export audit trail">
+            <button id="persistentlogger-export-json" type="button">JSON</button>
+            <button id="persistentlogger-export-csv" type="button">CSV</button>
+          </span>
+          <span id="persistentlogger-status" class="persistentlogger-status" role="status" aria-live="polite">Loading events…</span>
+        </section>
+
+        <section class="persistentlogger-card" aria-labelledby="persistentlogger-table-title">
+          <h2 id="persistentlogger-table-title" class="visually-hidden">Audit events</h2>
+          <div id="persistentlogger-grid" class="ag-theme-quartz persistentlogger-grid" aria-label="Audit events"></div>
+          <p id="persistentlogger-empty" class="persistentlogger-empty" hidden="hidden">No audit events match this stream.</p>
+          <p id="persistentlogger-error" class="persistentlogger-error" hidden="hidden"></p>
+        </section>
+
+        <dialog id="persistentlogger-details-dialog"
+                class="border border-2 border-success-subtle rounded-3 shadow-lg p-0"
+                aria-labelledby="persistentlogger-details-title">
+          <div class="modal-dialog modal-lg modal-dialog-centered m-0">
+            <div class="modal-content">
+            <header class="modal-header">
+              <div>
+                <p class="persistentlogger-kicker mb-1">Event payload</p>
+                <h2 id="persistentlogger-details-title" class="modal-title h4">Event details</h2>
+                <p id="persistentlogger-details-event" class="text-muted font-monospace mb-0"></p>
+              </div>
+              <button id="persistentlogger-details-close"
+                      class="btn-close"
+                      type="button"
+                      aria-label="Close details"></button>
+            </header>
+            <div class="d-flex flex-wrap gap-2 border-bottom px-4 py-3 text-muted font-monospace small" aria-label="Event metadata">
+              <span id="persistentlogger-details-actor" class="badge text-bg-light fw-normal"></span>
+              <span id="persistentlogger-details-created" class="badge text-bg-light fw-normal"></span>
+            </div>
+            <div class="modal-body">
+              <div class="d-flex align-items-center justify-content-between gap-3 mb-2">
+                <span class="text-muted font-monospace small text-uppercase">Structured JSON</span>
+                <button id="persistentlogger-details-copy" class="btn btn-outline-secondary btn-sm" type="button">Copy JSON</button>
+              </div>
+              <pre id="persistentlogger-details-content" class="bg-dark text-light font-monospace small rounded p-3 mb-0 overflow-auto"></pre>
+            </div>
+            <div class="modal-footer">
+              <button id="persistentlogger-details-footer-close" class="btn btn-primary" type="button">Close</button>
+            </div>
+            </div>
+          </div>
+        </dialog>
+      </main>
+    </metal:block>
+  </body>
+</html>

@@ -1,0 +1,16 @@
+<configure xmlns="http://namespaces.zope.org/zope" xmlns:browser="http://namespaces.zope.org/browser" xmlns:genericsetup="http://namespaces.zope.org/genericsetup">
+  <include file="permissions.zcml" />
+  <include package="plone.app.registry" />
+  <browser:resourceDirectory name="persistentlogger" directory="browser/static" />
+  <subscriber for="Products.CMFCore.interfaces.IContentish zope.lifecycleevent.interfaces.IObjectAddedEvent" handler=".subscribers.log_added" />
+  <subscriber for="Products.CMFCore.interfaces.IContentish zope.lifecycleevent.interfaces.IObjectModifiedEvent" handler=".subscribers.log_modified" />
+  <browser:page name="persistentlogger-controlpanel" for="Products.CMFCore.interfaces.ISiteRoot" permission="cmf.ManagePortal" class=".controlpanel.AuditLoggingControlPanel" />
+  <browser:page name="persistentlogger-enabled" for="*" permission="zope2.View" class=".controlpanel.LoggingEnabled" />
+  <browser:page name="persistent-log" for="*" permission="zopyx.plone.persistentlogger.view_audit_log" class=".browser.AuditLog" />
+  <browser:page name="persistent-log-data" for="*" permission="zopyx.plone.persistentlogger.view_audit_log" class=".browser.AuditData" />
+  <browser:page name="persistent-log-integrity" for="*" permission="zopyx.plone.persistentlogger.verify_audit_integrity" class=".browser.AuditIntegrity" />
+  <browser:page name="persistent-log-export" for="*" permission="zopyx.plone.persistentlogger.export_audit_log" class=".browser.AuditExport" />
+  <browser:page name="persistent-log-retention/preview" for="*" permission="zopyx.plone.persistentlogger.preview_audit_deletion" class=".browser.AuditRetentionPreview" />
+  <browser:page name="persistent-log-retention/delete" for="*" permission="zopyx.plone.persistentlogger.execute_audit_deletion" class=".browser.AuditRetentionDelete" />
+  <genericsetup:registerProfile name="default" title="Persistent audit logger" directory="profiles/default" provides="Products.GenericSetup.interfaces.EXTENSION" />
+</configure>

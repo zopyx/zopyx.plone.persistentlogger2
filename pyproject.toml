@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "zopyx.plone.persistentlogger"
+version = "1.0.0a1"
+description = "Object-scoped, tamper-evident audit logging for Plone"
+requires-python = ">=3.12"
+license = {text = "GPL-3.0-or-later"}
+dependencies = [
+  "plone.api",
+  "plone.protect",
+  "zope.annotation",
+  "zope.component",
+  "zope.interface",
+]
+
+[project.optional-dependencies]
+rdbms = ["sqlalchemy>=2.0"]
+test = ["pytest", "plone.app.testing"]
+demo = [
+  "Plone>=6.2,<6.3",
+  "plone.app.contenttypes",
+  "plonetheme.barceloneta",
+]
+
+[project.entry-points."z3c.autoinclude.plugin"]
+target = "plone"
+
+[tool.setuptools.packages.find]
+include = ["zopyx*"]
+
+[tool.setuptools.package-data]
+"zopyx.plone.persistentlogger" = ["*.zcml", "profiles/**/*", "browser/**/*"]

@@ -1,0 +1,3 @@
+recursive-include zopyx/plone/persistentlogger *.zcml *.xml *.pt *.js *.css
+recursive-include scripts *.py *.sh
+include README.rst

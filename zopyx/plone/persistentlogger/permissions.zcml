@@ -1,0 +1,10 @@
+<configure xmlns="http://namespaces.zope.org/zope">
+  <permission id="zopyx.plone.persistentlogger.view_audit_log" title="View audit log" />
+  <permission id="zopyx.plone.persistentlogger.search_audit_logs" title="Search audit logs" />
+  <permission id="zopyx.plone.persistentlogger.export_audit_log" title="Export audit log" />
+  <permission id="zopyx.plone.persistentlogger.manage_audit_retention" title="Manage audit retention" />
+  <permission id="zopyx.plone.persistentlogger.preview_audit_deletion" title="Preview audit deletion" />
+  <permission id="zopyx.plone.persistentlogger.execute_audit_deletion" title="Execute audit deletion" />
+  <permission id="zopyx.plone.persistentlogger.manage_legal_holds" title="Manage legal holds" />
+  <permission id="zopyx.plone.persistentlogger.verify_audit_integrity" title="Verify audit integrity" />
+</configure>

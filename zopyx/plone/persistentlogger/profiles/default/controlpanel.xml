@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+        name="portal_controlpanel"
+        purge="False"
+        i18n:domain="zopyx.plone.persistentlogger">
+  <configlet action_id="zopyx.plone.persistentlogger"
+             appId="zopyx.plone.persistentlogger"
+             category="plone-content"
+             condition_expr=""
+             icon_expr="string:clipboard-check"
+             title="Persistent audit logging"
+             url_expr="string:${portal_url}/@@persistentlogger-controlpanel"
+             visible="True">
+    <permission>Manage portal</permission>
+  </configlet>
+</object>
