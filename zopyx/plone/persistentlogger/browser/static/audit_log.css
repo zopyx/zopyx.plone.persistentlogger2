@@ -12,7 +12,7 @@
   background: var(--audit-paper);
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
-.persistentlogger-header { border-bottom: 1px solid var(--audit-line); padding-bottom: .7rem; }
+.persistentlogger-header { padding-bottom: .7rem; }
 .persistentlogger-kicker { margin: 0 0 .6rem; color: var(--audit-muted); font: 700 .72rem/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .14em; text-transform: uppercase; }
 .persistentlogger-intro { max-width: 42rem; margin: 1rem 0 0; color: var(--audit-muted); font-size: 1rem; }
 .persistentlogger-toolbar { display: flex; flex-wrap: wrap; align-items: end; gap: .75rem; padding: 1.25rem 0; }
