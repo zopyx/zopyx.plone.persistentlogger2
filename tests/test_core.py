@@ -204,6 +204,7 @@ class Response:
 
     def setStatus(self, value): self.status = value
     def setHeader(self, key, value): self.headers[key] = value
+    def redirect(self, value): self.redirect_url = value
 
 
 class Request:
@@ -370,6 +371,7 @@ def test_controlpanel_save(monkeypatch):
     settings = SimpleNamespace()
     registry = SimpleNamespace(forInterface=lambda *_args, **_kwargs: settings)
     monkeypatch.setattr(controlpanel, "_registry", lambda: registry)
+    monkeypatch.setattr("Products.statusmessages.interfaces.IStatusMessage", lambda _: SimpleNamespace(addStatusMessage=lambda *_args, **_kwargs: None))
 
     class BodyRequest(Request):
         method = "POST"
@@ -377,13 +379,17 @@ def test_controlpanel_save(monkeypatch):
             super().__init__()
             self.stdin = StringIO(payload)
 
-    context = SimpleNamespace()
+    context = SimpleNamespace(absolute_url=lambda: "http://example/Plone")
     result = controlpanel.AuditLoggingControlPanelSave(context, BodyRequest(
         '{"backend":"rdbms","transaction_mode":"joined","detail_limit":4096,'
         '"enabled_content_types":["Document"],"database_url":"postgresql://db"}'))()
-    assert result == '{"ok": true}'
+    assert result == ""
     assert settings.backend == "rdbms"
     assert settings.enabled_content_types == {"Document"}
+    controlpanel.AuditLoggingControlPanelSave(context, BodyRequest(
+        '{"backend":"zodb","transaction_mode":"outbox","detail_limit":65536,'
+        '"enabled_content_types":[]}'))()
+    assert settings.enabled_content_types == set()
     for payload in ("not-json", '{"audit_logging_enabled":"yes"}', '{"backend":"invalid"}', '{"detail_limit":1}', '{"detail_limit":"bad"}', '{"enabled_content_types":"Document"}'):
         with pytest.raises(ValidationError):
             controlpanel.AuditLoggingControlPanelSave(context, BodyRequest(payload))()

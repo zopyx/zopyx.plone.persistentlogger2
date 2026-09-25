@@ -1,7 +1,7 @@
 zopyx.plone.persistentlogger
 ============================
 
-Object-scoped, tamper-evident audit logging for Plone 6.2+ and Python 3.12+.
+Object-scoped, tamper-evident audit logging for Plone 6.2+ and Python 3.14.
 
 The add-on records structured lifecycle and application events in an
 object-local audit stream. Events are validated, sensitive values are
@@ -83,7 +83,7 @@ Demo Plone site
 ---------------
 
 The repository includes a UV-based Plone 6.2 bootstrap.  It installs Python
-3.12, resolves the optional demo dependencies, creates a Zope instance, adds
+3.14, resolves the optional demo dependencies, creates a Zope instance, adds
 the ``Plone`` site, installs and activates the Barceloneta theme plus the
 add-on GenericSetup profile, creates a demo document, and records an audit
 event::

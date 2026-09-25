@@ -2,7 +2,7 @@
 
 ## Project shape
 
-This is a Plone 6.2 add-on targeting Python 3.12. The public application
+This is a Plone 6.2 add-on targeting Python 3.14. The public application
 services live in `zopyx/plone/persistentlogger/api.py`; domain models and
 serialization are backend-neutral. `MemoryRepository` is the reference
 contract implementation, `ZODBRepository` is the default Plone adapter, and

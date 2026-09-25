@@ -1,4 +1,4 @@
-PYTHON ?= 3.12
+PYTHON ?= 3.14
 UV ?= uv
 PACKAGE := zopyx.plone.persistentlogger
 

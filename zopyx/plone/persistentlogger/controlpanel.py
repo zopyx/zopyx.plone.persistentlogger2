@@ -68,7 +68,6 @@ class AuditLoggingControlPanel:
         settings = self._settings()
         return {
             "title": "Persistent audit logging",
-            "description": "Choose the content types whose lifecycle events should be recorded.",
             "showQuestionNumbers": "off",
             "showCompletedPage": True,
             "completedHtml": "<div class='message success'>Settings saved.</div>",
@@ -140,7 +139,9 @@ class AuditLoggingControlPanelSave:
             raise ValidationError("detail_limit must be an integer") from exc
         if not 1024 <= detail_limit <= 1048576:
             raise ValidationError("detail_limit is out of bounds")
-        enabled = data.get("enabled_content_types", ()) or ()
+        enabled = data.get("enabled_content_types", [])
+        if enabled is None:
+            enabled = []
         if not isinstance(enabled, list) or not all(isinstance(item, str) for item in enabled):
             raise ValidationError("enabled_content_types must be a list of strings")
         settings.audit_logging_enabled = audit_logging_enabled
@@ -149,8 +150,10 @@ class AuditLoggingControlPanelSave:
         settings.detail_limit = detail_limit
         settings.enabled_content_types = set(enabled)
         settings.database_url = str(data.get("database_url", "") or "")
-        self.request.response.setHeader("Content-Type", "application/json; charset=utf-8")
-        return json.dumps({"ok": True})
+        from Products.statusmessages.interfaces import IStatusMessage
+        IStatusMessage(self.request).addStatusMessage("Audit logging settings saved.", type="info")
+        self.request.response.redirect(f"{self.context.absolute_url()}/@@persistentlogger-controlpanel")
+        return ""
 
 
 class LoggingEnabled:

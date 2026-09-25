@@ -18,7 +18,7 @@ jobs:
           version: latest
           enable-cache: true
       - name: Set up Python
-        run: uv python install 3.12
+        run: uv python install 3.14
       - name: Install dependencies
         run: uv sync --extra test --extra rdbms
       - name: Run tests with coverage
@@ -35,7 +35,7 @@ jobs:
           version: latest
           enable-cache: true
       - name: Set up Python
-        run: uv python install 3.12
+        run: uv python install 3.14
       - name: Install integration dependencies
         run: uv sync --extra test --extra rdbms --extra integration
       - name: Run the PostgreSQL Testcontainers contract

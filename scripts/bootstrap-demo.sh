@@ -18,8 +18,8 @@ command -v uv >/dev/null 2>&1 || {
   exit 1
 }
 
-uv python install 3.12
-uv venv --python 3.12
+uv python install 3.14
+uv venv --python 3.14
 uv sync --extra demo
 
 if [[ ! -f "${INSTANCE_DIR}/etc/zope.conf" ]]; then
