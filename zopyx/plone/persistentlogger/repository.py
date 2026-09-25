@@ -145,12 +145,13 @@ class MemoryRepository:
         return preview
 
     def delete_preview(self, preview_id: UUID | str, *, actor: str, reason: str) -> dict[str, Any]:
-        preview = self._previews.pop(UUID(str(preview_id)), None)
+        preview = self._previews.get(UUID(str(preview_id)))
         if not preview or preview.is_expired() or preview.actor != actor or not reason.strip():
             raise PreviewExpired("deletion preview is missing, expired, or not owned by the actor")
         held = {hold.event_id for hold in self.list_holds(active_only=True) if hold.event_id}
         if any(event_id in held for event_id in preview.event_ids):
             raise HoldConflict("a legal hold blocks deletion")
+        self._previews.pop(preview.preview_id, None)
         selected = set(preview.event_ids)
         before = len(self._events)
         self._events = [row for row in self._events if UUID(row["event_id"]) not in selected]

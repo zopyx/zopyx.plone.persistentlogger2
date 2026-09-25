@@ -5,3 +5,7 @@ instance/var/
 __pycache__/
 *.py[cod]
 .DS_Store
+.coverage
+coverage.xml
+build/
+dist/

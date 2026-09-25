@@ -5,19 +5,22 @@
   <metal:block fill-slot="head_slot">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@34.0.0/styles/ag-grid.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@34.0.0/styles/ag-theme-quartz.css" />
-    <link rel="stylesheet" href="++resource++persistentlogger/audit_log.css?v=12" />
+    <link rel="stylesheet" href="++resource++persistentlogger/audit_log.css?v=13" />
   </metal:block>
 
   <metal:block fill-slot="javascript_head_slot">
     <script src="https://cdn.jsdelivr.net/npm/ag-grid-community@34.0.0/dist/ag-grid-community.min.js"></script>
-    <script src="++resource++persistentlogger/audit_log.js?v=12"></script>
+    <script src="++resource++persistentlogger/audit_log.js?v=13"></script>
   </metal:block>
 
   <body>
     <metal:block fill-slot="main">
-      <main id="persistentlogger-app"
+        <main id="persistentlogger-app"
             class="persistentlogger-shell"
             tal:attributes="data-endpoint view/data_url; data-export-endpoint view/export_url; data-timezone view/timezone">
+        <header class="persistentlogger-header">
+          <h1>Logging</h1>
+        </header>
         <section class="persistentlogger-toolbar" aria-label="Audit filters">
           <label for="persistentlogger-quick">Find in stream</label>
           <input id="persistentlogger-quick" type="search" placeholder="Actor, event type, or comment" autocomplete="off" />

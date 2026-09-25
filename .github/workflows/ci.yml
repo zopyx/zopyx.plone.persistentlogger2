@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: latest
+          enable-cache: true
+      - name: Set up Python
+        run: uv python install 3.12
+      - name: Install dependencies
+        run: uv sync --extra test
+      - name: Run tests with coverage
+        run: uv run --extra test pytest --cov=zopyx.plone.persistentlogger --cov-branch --cov-report=term-missing --cov-fail-under=99
+      - name: Build package
+        run: uv build

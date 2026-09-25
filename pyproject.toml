@@ -7,7 +7,7 @@ name = "zopyx.plone.persistentlogger"
 version = "1.0.0a1"
 description = "Object-scoped, tamper-evident audit logging for Plone"
 requires-python = ">=3.12"
-license = {text = "GPL-3.0-or-later"}
+license = "GPL-3.0-or-later"
 dependencies = [
   "plone.api",
   "plone.protect",
@@ -18,7 +18,7 @@ dependencies = [
 
 [project.optional-dependencies]
 rdbms = ["sqlalchemy>=2.0"]
-test = ["pytest", "plone.app.testing"]
+test = ["Plone>=6.2,<6.3", "pytest", "pytest-cov", "plone.app.testing"]
 demo = [
   "Plone>=6.2,<6.3",
   "plone.app.contenttypes",
@@ -33,3 +33,19 @@ include = ["zopyx*"]
 
 [tool.setuptools.package-data]
 "zopyx.plone.persistentlogger" = ["*.zcml", "profiles/**/*", "browser/**/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--strict-markers"
+
+[tool.coverage.run]
+branch = true
+source = ["zopyx.plone.persistentlogger"]
+
+[tool.coverage.report]
+fail_under = 99
+show_missing = true
+exclude_also = [
+  "if TYPE_CHECKING:",
+  "raise NotImplementedError",
+]
