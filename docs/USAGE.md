@@ -66,16 +66,15 @@ depend on the lifecycle content-type selection.
 
 ## Audit view
 
-The **Logging** object action opens `@@persistent-log`, which uses AG Grid
-Enterprise's server-side row model. It provides quick search, server-side
-sortable/resizable columns, server-side filtering, pagination, localized
-timestamps, a JSON details dialog, JSON/CSV exports, and a **No matching data
-found** state. The browser requests only the current row block; the endpoint
-returns `rows` and the total matching row count.
+The **Logging** object action opens `@@persistent-log`, which uses Tabulator's
+vanilla browser build with remote pagination. It provides quick search,
+server-side sorting, filtering, pagination, localized timestamps, a JSON
+details dialog, JSON/CSV exports, and a **No matching data found** state. The
+browser requests only the current row block; the endpoint returns `rows` and
+the total matching row count.
 
-AG Grid Enterprise requires an appropriate production license. The add-on
-does not embed a license key; configure the key in the deployment's frontend
-asset strategy according to AG Grid's licensing instructions.
+Tabulator is used under its open-source distribution. The add-on does not
+require a commercial grid license or a frontend license key.
 
 Exports use the current search text and require the export permission. CSV
 formula-like values are escaped before download.

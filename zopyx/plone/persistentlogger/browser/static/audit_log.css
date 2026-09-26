@@ -6,37 +6,46 @@
   --audit-line: #dce5df;
   max-width: 1180px;
   margin: 0;
-  padding: 0 0 2.5rem;
+  padding: 0 0 1.5rem;
   color: var(--audit-ink);
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
-.persistentlogger-header { padding-bottom: .35rem; }
-.persistentlogger-header h1 { margin: 0; }
+.persistentlogger-controls { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 1rem; margin-bottom: .35rem; }
+.persistentlogger-header { padding: 0; }
+.persistentlogger-header h1 { margin: 0; color: var(--audit-ink); font-size: clamp(1.5rem, 2.2vw, 1.9rem); letter-spacing: -.035em; line-height: 1.05; }
 .persistentlogger-kicker { margin: 0 0 .6rem; color: var(--audit-muted); font: 700 .72rem/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .14em; text-transform: uppercase; }
 .persistentlogger-intro { max-width: 42rem; margin: 1rem 0 0; color: var(--audit-muted); font-size: 1rem; }
-.persistentlogger-toolbar { display: flex; flex-wrap: wrap; align-items: end; gap: .5rem; padding: .65rem 0; }
+.persistentlogger-toolbar { display: flex; min-width: 0; flex-wrap: wrap; align-items: center; gap: .3rem; padding: 0; }
 .persistentlogger-toolbar label { flex-basis: 100%; color: var(--audit-muted); font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
-.persistentlogger-toolbar input { min-width: min(28rem, 100%); flex: 1; height: 2.25rem; box-sizing: border-box; border: 1px solid var(--audit-line); border-radius: 0; padding: .5rem .65rem; background: var(--audit-panel); color: var(--audit-ink); }
-.persistentlogger-toolbar button { height: 2.25rem; border: 1px solid var(--audit-ink); border-radius: 0; padding: .5rem .8rem; background: var(--audit-ink); color: white; font-weight: 700; cursor: pointer; }
-.persistentlogger-toolbar #persistentlogger-refresh { display: inline-grid; width: 2.25rem; height: 2.25rem; place-items: center; border-color: #b9c8bd; padding: 0; background: linear-gradient(180deg, #ffffff 0%, #eef4eb 100%); color: var(--audit-muted); box-shadow: 0 1px 2px rgba(23, 34, 31, .12), inset 0 1px 0 rgba(255, 255, 255, .85); transition: transform .15s ease, box-shadow .15s ease, background .15s ease; }
+.persistentlogger-toolbar input { min-width: min(16rem, 100%); flex: 1; height: 1.9rem; box-sizing: border-box; border: 1px solid #bdcbc2; border-radius: .25rem; padding: .34rem .6rem; background: var(--audit-panel); color: var(--audit-ink); box-shadow: inset 0 1px 2px rgba(23, 34, 31, .06); }
+.persistentlogger-toolbar input::placeholder { color: #87938e; }
+.persistentlogger-toolbar input:focus { border-color: var(--audit-ink); box-shadow: 0 0 0 3px rgba(199, 243, 107, .45), inset 0 1px 2px rgba(23, 34, 31, .06); outline: 0; }
+.persistentlogger-toolbar button { height: 1.9rem; border: 1px solid var(--audit-ink); border-radius: .25rem; padding: .34rem .62rem; background: var(--audit-ink); color: white; font-size: .72rem; font-weight: 700; cursor: pointer; }
+.persistentlogger-toolbar #persistentlogger-refresh { display: inline-grid; width: 1.9rem; height: 1.9rem; place-items: center; border-color: #b9c8bd; padding: 0; background: linear-gradient(180deg, #ffffff 0%, #eef4eb 100%); color: var(--audit-muted); box-shadow: 0 1px 2px rgba(23, 34, 31, .12), inset 0 1px 0 rgba(255, 255, 255, .85); transition: transform .15s ease, box-shadow .15s ease, background .15s ease; }
 .persistentlogger-toolbar #persistentlogger-refresh:hover, .persistentlogger-toolbar #persistentlogger-refresh:focus-visible { border-color: var(--audit-ink); background: linear-gradient(180deg, #f5ffd9 0%, var(--audit-accent) 100%); color: var(--audit-ink); box-shadow: 0 3px 8px rgba(23, 34, 31, .18); transform: translateY(-1px); }
 .persistentlogger-toolbar #persistentlogger-refresh:focus-visible { outline: 2px solid var(--audit-accent); outline-offset: 2px; }
 .persistentlogger-toolbar button:hover, .persistentlogger-toolbar button:focus-visible { background: #31443e; }
-.persistentlogger-export-actions { display: inline-flex; gap: .4rem; }
-.persistentlogger-export-actions button { border-color: #b9c8bd; padding: .5rem .65rem; background: linear-gradient(180deg, #ffffff 0%, #eef4eb 100%); color: var(--audit-ink); box-shadow: 0 1px 2px rgba(23, 34, 31, .12), inset 0 1px 0 rgba(255, 255, 255, .85); font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; transition: transform .15s ease, box-shadow .15s ease, background .15s ease; }
+.persistentlogger-export-actions { display: inline-flex; gap: .3rem; }
+.persistentlogger-export-actions button { border-color: #b9c8bd; padding: .34rem .52rem; background: linear-gradient(180deg, #ffffff 0%, #eef4eb 100%); color: var(--audit-ink); box-shadow: 0 1px 2px rgba(23, 34, 31, .12), inset 0 1px 0 rgba(255, 255, 255, .85); font-size: .64rem; letter-spacing: .08em; text-transform: uppercase; transition: transform .15s ease, box-shadow .15s ease, background .15s ease; }
 .persistentlogger-export-actions button:hover, .persistentlogger-export-actions button:focus-visible { border-color: var(--audit-ink); background: linear-gradient(180deg, #f5ffd9 0%, var(--audit-accent) 100%); box-shadow: 0 3px 8px rgba(23, 34, 31, .18); transform: translateY(-1px); }
 .persistentlogger-export-actions button:focus-visible { outline: 2px solid var(--audit-accent); outline-offset: 2px; }
-.persistentlogger-status { align-self: center; color: var(--audit-muted); font-size: .84rem; }
-.persistentlogger-card { position: relative; min-height: 25rem; border: 1px solid var(--audit-line); background: var(--audit-panel); }
-.persistentlogger-grid { width: 100%; height: 25rem; min-height: 25rem; --ag-font-family: ui-monospace, SFMono-Regular, Menlo, monospace; --ag-font-size: .82rem; --ag-background-color: var(--audit-panel); --ag-foreground-color: var(--audit-ink); --ag-header-background-color: #f4f6f1; --ag-header-text-color: var(--audit-ink); --ag-header-foreground-color: var(--audit-ink); --ag-header-height: 2.8rem; --ag-row-height: 2.85rem; --ag-cell-horizontal-padding: .75rem; --ag-header-column-resize-handle-color: var(--audit-accent); --ag-row-border-color: #edf1ed; --ag-row-hover-color: #eef7d7; --ag-selected-row-background-color: #e4f2c4; --ag-border-color: var(--audit-line); }
-#persistentlogger-grid.ag-theme-quartz .ag-header { border-bottom: 3px solid var(--audit-accent); background: linear-gradient(110deg, #ffffff 0%, #f0f4ed 100%); }
-#persistentlogger-grid.ag-theme-quartz .ag-header-cell-label { color: var(--audit-ink); font-size: .7rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
-#persistentlogger-grid.ag-theme-quartz .ag-row { transition: background-color .15s ease, box-shadow .15s ease; }
-#persistentlogger-grid.ag-theme-quartz .ag-row-hover { box-shadow: inset 3px 0 0 var(--audit-accent); }
-#persistentlogger-grid.ag-theme-quartz .ag-cell-focus:not(.ag-cell-range-selected):focus-within { border: 2px solid var(--audit-accent); border-radius: 2px; }
-#persistentlogger-grid.ag-theme-quartz .ag-paging-panel { min-height: 2.8rem; border-top: 1px solid var(--audit-line); background: #fbfcfa; color: var(--audit-muted); font-size: .75rem; }
-#persistentlogger-grid.ag-theme-quartz .ag-paging-button { color: var(--audit-ink); }
-#persistentlogger-grid.ag-theme-quartz .ag-paging-button:hover:not(.ag-disabled) { color: var(--audit-ink); background: var(--audit-accent); border-radius: 3px; }
+.persistentlogger-status { align-self: center; margin-left: auto; color: var(--audit-muted); font-size: .76rem; }
+.persistentlogger-card { position: relative; min-height: 21rem; background: var(--audit-panel); box-shadow: 0 6px 16px rgba(23, 34, 31, .07); }
+.persistentlogger-grid { width: 100%; height: 21rem; min-height: 21rem; overflow: hidden; border: 1px solid var(--audit-line); border-top: 2px solid var(--audit-accent); }
+.persistentlogger-grid .tabulator { height: 100%; border: 0; background: var(--audit-panel); color: var(--audit-ink); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .78rem; }
+.persistentlogger-grid .tabulator-header { border-bottom: 2px solid var(--audit-accent); background: linear-gradient(110deg, #ffffff 0%, #f0f4ed 100%); color: var(--audit-ink); }
+.persistentlogger-grid .tabulator-col { height: 2.25rem; border-right: 1px solid var(--audit-line); background: transparent; }
+.persistentlogger-grid .tabulator-col:hover { background: #f5ffd9; }
+.persistentlogger-grid .tabulator-col-title { padding: .58rem .55rem; color: var(--audit-ink); font-size: .62rem; font-weight: 800; letter-spacing: .1em; line-height: 1; text-transform: uppercase; }
+.persistentlogger-grid .tabulator-header-filter { padding: 0 .45rem .3rem; }
+.persistentlogger-grid .tabulator-header-filter input { height: 1.35rem; box-sizing: border-box; border: 1px solid #bdcbc2; border-radius: .18rem; padding: .15rem .3rem; background: #ffffff; color: var(--audit-ink); font: .68rem ui-monospace, SFMono-Regular, Menlo, monospace; }
+.persistentlogger-grid .tabulator-header-filter input:focus { border-color: var(--audit-ink); box-shadow: 0 0 0 2px rgba(199, 243, 107, .45); outline: 0; }
+.persistentlogger-grid .tabulator-row { min-height: 36px; border-bottom: 1px solid #edf1ed; background: var(--audit-panel); color: var(--audit-ink); transition: background-color .15s ease, box-shadow .15s ease; }
+.persistentlogger-grid .tabulator-row:hover { background: #eef7d7; box-shadow: inset 3px 0 0 var(--audit-accent); }
+.persistentlogger-grid .tabulator-cell { border-right: 1px solid #f0f3ef; padding: .48rem .55rem; line-height: 1.15; }
+.persistentlogger-grid .tabulator-footer { min-height: 2.25rem; border-top: 1px solid var(--audit-line); background: #fbfcfa; color: var(--audit-muted); font-size: .68rem; }
+.persistentlogger-grid .tabulator-footer .tabulator-page { min-width: 1.6rem; height: 1.55rem; border: 1px solid transparent; border-radius: .18rem; color: var(--audit-ink); }
+.persistentlogger-grid .tabulator-footer .tabulator-page:hover:not(.disabled) { border-color: var(--audit-ink); background: var(--audit-accent); color: var(--audit-ink); }
 .persistentlogger-details-button { display: inline-grid; width: 1.7rem; height: 1.7rem; place-items: center; border: 0; border-radius: 50%; padding: .3rem; background: transparent; color: var(--audit-muted); cursor: pointer; }
 .persistentlogger-details-button svg { width: 1.05rem; height: 1.05rem; }
 .persistentlogger-details-button:hover, .persistentlogger-details-button:focus-visible { background: var(--audit-accent); color: var(--audit-ink); outline: 2px solid var(--audit-accent); outline-offset: 3px; }
@@ -58,5 +67,5 @@
 .persistentlogger-empty { position: absolute; inset: 0; z-index: 2; display: grid; place-items: center; margin: 0; background: rgba(255, 255, 255, .9); font-size: .9rem; font-weight: 700; }
 .persistentlogger-error { color: #a02929; }
 .visually-hidden { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(1px, 1px, 1px, 1px); white-space: nowrap; }
-@media (max-width: 700px) { .persistentlogger-shell { padding: 0 0 2.5rem; } .persistentlogger-toolbar { align-items: stretch; } .persistentlogger-toolbar button { width: 100%; } .persistentlogger-export-actions { width: 100%; } .persistentlogger-export-actions button { flex: 1; } #persistentlogger-details-dialog { width: calc(100vw - 1rem); max-width: calc(100vw - 1rem); } #persistentlogger-details-dialog .modal-header, #persistentlogger-details-dialog .modal-body { padding-left: 1rem; padding-right: 1rem; } #persistentlogger-details-dialog .modal-footer { padding-left: 1rem; padding-right: 1rem; } }
+@media (max-width: 700px) { .persistentlogger-shell { padding: 0 0 1.5rem; } .persistentlogger-controls { grid-template-columns: 1fr; gap: .35rem; } .persistentlogger-toolbar { align-items: stretch; } .persistentlogger-toolbar input { min-width: 100%; } .persistentlogger-toolbar button { width: 100%; } .persistentlogger-export-actions { width: 100%; } .persistentlogger-export-actions button { flex: 1; } .persistentlogger-status { width: 100%; margin-left: 0; } #persistentlogger-details-dialog { width: calc(100vw - 1rem); max-width: calc(100vw - 1rem); } #persistentlogger-details-dialog .modal-header, #persistentlogger-details-dialog .modal-body { padding-left: 1rem; padding-right: 1rem; } #persistentlogger-details-dialog .modal-footer { padding-left: 1rem; padding-right: 1rem; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; } }

@@ -3,14 +3,13 @@
       xmlns:metal="http://xml.zope.org/namespaces/metal"
       metal:use-macro="context/main_template/macros/master">
   <metal:block fill-slot="head_slot">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@34.0.0/styles/ag-grid.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@34.0.0/styles/ag-theme-quartz.css" />
-    <link rel="stylesheet" href="++resource++persistentlogger/audit_log.css?v=14" />
+    <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@6.5.0/dist/css/tabulator.min.css" />
+    <link rel="stylesheet" href="++resource++persistentlogger/audit_log.css?v=18" />
   </metal:block>
 
   <metal:block fill-slot="javascript_head_slot">
-    <script src="https://cdn.jsdelivr.net/npm/ag-grid-enterprise@34.0.0/dist/ag-grid-enterprise.min.js"></script>
-    <script src="++resource++persistentlogger/audit_log.js?v=14"></script>
+    <script src="https://unpkg.com/tabulator-tables@6.5.0/dist/js/tabulator.min.js"></script>
+    <script src="++resource++persistentlogger/audit_log.js?v=18"></script>
   </metal:block>
 
   <body>
@@ -18,34 +17,36 @@
         <main id="persistentlogger-app"
             class="persistentlogger-shell"
             tal:attributes="data-endpoint view/data_url; data-export-endpoint view/export_url; data-timezone view/timezone">
-        <header class="persistentlogger-header">
-          <h1>Logging</h1>
-        </header>
-        <section class="persistentlogger-toolbar" aria-label="Audit filters">
-          <input id="persistentlogger-quick"
-                 type="search"
-                 aria-label="Find in stream"
-                 placeholder="Actor, event type, or comment"
-                 autocomplete="off" />
-          <button id="persistentlogger-refresh"
-                  type="button"
-                  aria-label="Refresh audit events"
-                  title="Refresh audit events">
-            <span class="visually-hidden">Refresh audit events</span>
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" width="18" height="18">
-              <path d="M20 11a8 8 0 0 0-14.8-4L3 9m0 0V4m0 5h5M4 13a8 8 0 0 0 14.8 4L21 15m0 0v5m0-5h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
-          </button>
-          <span class="persistentlogger-export-actions" aria-label="Export audit trail">
-            <button id="persistentlogger-export-json" type="button">JSON</button>
-            <button id="persistentlogger-export-csv" type="button">CSV</button>
-          </span>
-          <span id="persistentlogger-status" class="persistentlogger-status" role="status" aria-live="polite">Loading events…</span>
-        </section>
+        <div class="persistentlogger-controls">
+          <header class="persistentlogger-header">
+            <h1>Logging</h1>
+          </header>
+          <section class="persistentlogger-toolbar" aria-label="Audit filters">
+            <input id="persistentlogger-quick"
+                   type="search"
+                   aria-label="Find in stream"
+                   placeholder="Actor, event type, or comment"
+                   autocomplete="off" />
+            <button id="persistentlogger-refresh"
+                    type="button"
+                    aria-label="Refresh audit events"
+                    title="Refresh audit events">
+              <span class="visually-hidden">Refresh audit events</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" width="18" height="18">
+                <path d="M20 11a8 8 0 0 0-14.8-4L3 9m0 0V4m0 5h5M4 13a8 8 0 0 0 14.8 4L21 15m0 0v5m0-5h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </button>
+            <span class="persistentlogger-export-actions" aria-label="Export audit trail">
+              <button id="persistentlogger-export-json" type="button">JSON</button>
+              <button id="persistentlogger-export-csv" type="button">CSV</button>
+            </span>
+            <span id="persistentlogger-status" class="persistentlogger-status" role="status" aria-live="polite">Loading events…</span>
+          </section>
+        </div>
 
         <section class="persistentlogger-card" aria-labelledby="persistentlogger-table-title">
           <h2 id="persistentlogger-table-title" class="visually-hidden">Audit events</h2>
-          <div id="persistentlogger-grid" class="ag-theme-quartz persistentlogger-grid" aria-label="Audit events"></div>
+          <div id="persistentlogger-grid" class="persistentlogger-grid" aria-label="Audit events"></div>
           <p id="persistentlogger-empty" class="persistentlogger-empty" hidden="hidden">No matching data found</p>
           <p id="persistentlogger-error" class="persistentlogger-error" hidden="hidden"></p>
         </section>

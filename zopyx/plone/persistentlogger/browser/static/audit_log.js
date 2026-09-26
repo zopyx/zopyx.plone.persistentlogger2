@@ -1,9 +1,42 @@
 (function () {
   "use strict";
 
+  function text(value) { return value === null || value === undefined ? "" : String(value); }
+
+  function prettyDetails(value) {
+    var output;
+    try { output = JSON.stringify(value, null, 2); } catch (_) { output = "[unavailable]"; }
+    return output === undefined ? "" : output;
+  }
+
+  function localTime(value, timezone) {
+    if (!value) return "unknown time";
+    var date = new Date(value);
+    if (Number.isNaN(date.getTime())) return text(value);
+    try {
+      return new Intl.DateTimeFormat(document.documentElement.lang || undefined, { dateStyle: "medium", timeStyle: "medium", timeZone: timezone }).format(date);
+    } catch (_) { return date.toLocaleString(); }
+  }
+
+  function auditFilterModel(filters) {
+    var model = {};
+    (filters || []).forEach(function (filter) {
+      if (!filter || !filter.field || filter.value === undefined || filter.value === null || filter.value === "") return;
+      var operators = { equal: "equals", notEqual: "notEqual", starts: "startsWith", ends: "endsWith", empty: "blank", notEmpty: "notBlank", in: "set" };
+      model[filter.field] = { filterType: "text", type: operators[filter.type] || "contains", filter: filter.value };
+    });
+    return model;
+  }
+
+  function auditSortModel(sorters) {
+    return (sorters || []).map(function (sorter) {
+      return { colId: sorter.field, sort: sorter.dir === "asc" ? "asc" : "desc" };
+    });
+  }
+
   function init() {
     var app = document.getElementById("persistentlogger-app");
-    if (!app) return;
+    if (!app || typeof window.Tabulator === "undefined") return;
     var gridHost = document.getElementById("persistentlogger-grid");
     var status = document.getElementById("persistentlogger-status");
     var empty = document.getElementById("persistentlogger-empty");
@@ -22,165 +55,125 @@
     var endpoint = app.getAttribute("data-endpoint");
     var exportEndpoint = app.getAttribute("data-export-endpoint");
     var timezone = app.getAttribute("data-timezone") || "UTC";
-    var gridApi = null;
+    var lastTotal = 0;
+    var searchTimer = null;
 
-    function text(value) { return value === null || value === undefined ? "" : String(value); }
-    function details(value) {
-      var output;
-      try { output = JSON.stringify(value); } catch (_) { output = "[unavailable]"; }
-      if (output === undefined) output = "";
-      return output.length > 420 ? output.slice(0, 420) + "…" : output;
+    function visible(element, value) { if (value) element.removeAttribute("hidden"); else element.setAttribute("hidden", "hidden"); }
+    function setState(message, isError) { status.textContent = message; visible(error, isError); if (isError) error.textContent = message; }
+    function updateEmptyState() {
+      empty.textContent = search.value.trim() ? "No matching data found" : "No audit events match this stream.";
+      visible(empty, lastTotal === 0);
     }
-    function prettyDetails(value) {
-      var output;
-      try { output = JSON.stringify(value, null, 2); } catch (_) { output = "[unavailable]"; }
-      return output === undefined ? "" : output;
-    }
-    function localTime(value) {
-      if (!value) return "unknown time";
-      var date = new Date(value);
-      if (Number.isNaN(date.getTime())) return text(value);
-      try {
-        return new Intl.DateTimeFormat(document.documentElement.lang || undefined, {
-          dateStyle: "medium",
-          timeStyle: "medium",
-          timeZone: timezone
-        }).format(date);
-      } catch (_) {
-        return date.toLocaleString();
-      }
+    function requestUrl(params) {
+      var page = Number(params.page) || 1;
+      var size = Number(params.size) || 25;
+      var request = {
+        startRow: (page - 1) * size,
+        endRow: page * size,
+        quick: search.value.trim(),
+        sortModel: auditSortModel(params.sorters),
+        filterModel: auditFilterModel(params.filters)
+      };
+      var query = new URLSearchParams({
+        startRow: String(request.startRow),
+        endRow: String(request.endRow),
+        sortModel: JSON.stringify(request.sortModel),
+        filterModel: JSON.stringify(request.filterModel)
+      });
+      if (request.quick) query.set("quick", request.quick);
+      return endpoint + "?" + query.toString();
     }
     function openDetails(row) {
       detailsEvent.textContent = text(row.event_type) || "Unclassified event";
       detailsActor.textContent = "Actor · " + (text(row.actor) || "system");
-      detailsCreated.textContent = "Recorded · " + localTime(row.created_at);
+      detailsCreated.textContent = "Recorded · " + localTime(row.created_at, timezone);
       detailsContent.textContent = prettyDetails(row.details);
-      if (typeof detailsDialog.showModal === "function") {
-        detailsDialog.showModal();
-      } else {
-        detailsDialog.setAttribute("open", "open");
-      }
+      if (typeof detailsDialog.showModal === "function") detailsDialog.showModal(); else detailsDialog.setAttribute("open", "open");
       detailsClose.focus();
     }
+    function closeDetails() { if (typeof detailsDialog.close === "function") detailsDialog.close(); else detailsDialog.removeAttribute("open"); }
     function copyDetails() {
       var value = detailsContent.textContent;
-      if (!navigator.clipboard || !navigator.clipboard.writeText) {
-        detailsCopy.textContent = "Select JSON to copy";
-        return;
-      }
+      if (!navigator.clipboard || !navigator.clipboard.writeText) { detailsCopy.textContent = "Select JSON to copy"; return; }
       navigator.clipboard.writeText(value).then(function () {
         detailsCopy.textContent = "Copied";
         window.setTimeout(function () { detailsCopy.textContent = "Copy JSON"; }, 1400);
-      }, function () {
-        detailsCopy.textContent = "Copy unavailable";
-      });
+      }, function () { detailsCopy.textContent = "Copy unavailable"; });
     }
-    function closeDetails() {
-      if (typeof detailsDialog.close === "function") {
-        detailsDialog.close();
-      } else {
-        detailsDialog.removeAttribute("open");
-      }
-    }
-    function visible(element, value) {
-      if (value) element.removeAttribute("hidden");
-      else element.setAttribute("hidden", "hidden");
-    }
-    function updateEmptyState() {
-      if (!gridApi) return;
-      var noRowsVisible = gridApi.getDisplayedRowCount() === 0;
-      empty.textContent = search.value.trim() ? "No matching data found" : "No audit events match this stream.";
-      visible(empty, noRowsVisible);
-    }
-    function setState(message, isError) {
-      status.textContent = message;
-      visible(error, isError);
-      if (isError) error.textContent = message;
-    }
-    function refreshServerRows() {
-      if (gridApi) gridApi.refreshServerSide({ purge: true });
-    }
-    function requestUrl(request) {
-      var params = new URLSearchParams({
-        startRow: String(request.startRow || 0),
-        endRow: String(request.endRow || 25),
-      });
-      if (search.value) params.set("quick", search.value);
-      params.set("sortModel", JSON.stringify(request.sortModel || []));
-      params.set("filterModel", JSON.stringify(request.filterModel || {}));
-      return endpoint + "?" + params.toString();
-    }
-    var datasource = {
-      getRows: function (params) {
-        setState("Loading events…", false);
-        fetch(requestUrl(params.request), { credentials: "same-origin", headers: { Accept: "application/json" } })
-          .then(function (response) {
-            if (!response.ok) throw new Error("The audit stream could not be loaded.");
-            return response.json();
-          })
-          .then(function (payload) {
-            var rows = Array.isArray(payload.rows) ? payload.rows : [];
-            var total = Number.isInteger(payload.total) ? payload.total : rows.length;
-            params.success({ rowData: rows, rowCount: total });
-            setState(total + " event" + (total === 1 ? "" : "s") + " · newest first", false);
-            window.setTimeout(updateEmptyState, 0);
-          })
-          .catch(function (reason) {
-            params.fail();
-            visible(empty, true);
-            setState(reason.message || "The audit stream could not be loaded.", true);
-          });
-      }
-    };
     function exportEvents(format) {
       var params = new URLSearchParams({ format: format });
       if (search.value) params.set("quick", search.value);
       window.location.href = exportEndpoint + "?" + params.toString();
     }
-    var columnDefs = [
-      { field: "created_at", headerName: "Recorded", width: 220, minWidth: 190, sort: "desc", valueFormatter: function (params) { return localTime(params.value); } },
-      { field: "severity", headerName: "Level", width: 90 },
-      { field: "event_type", headerName: "Event", minWidth: 180, flex: 1 },
-      { field: "actor", headerName: "Actor", width: 160, minWidth: 130 },
-      { field: "comment", headerName: "Summary", minWidth: 220, flex: 2 },
-      { field: "details", headerName: "Details", width: 76, minWidth: 76, maxWidth: 90, sortable: false, filter: false, cellRenderer: function (params) {
-        var button = document.createElement("button");
-        button.type = "button";
-        button.className = "persistentlogger-details-button";
-        button.setAttribute("aria-label", "View details");
-        button.title = "View details";
-        button.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2 12s3.6-5.2 10-5.2S22 12 22 12s-3.6 5.2-10 5.2S2 12 2 12Zm10 2.7a2.7 2.7 0 1 0 0-5.4 2.7 2.7 0 0 0 0 5.4Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-        button.addEventListener("click", function () { openDetails(params.data); });
-        return button;
+
+    var columns = [
+      { title: "Recorded", field: "created_at", width: 195, sorter: "datetime", headerFilter: "input", formatter: function (cell) { return localTime(cell.getValue(), timezone); } },
+      { title: "Level", field: "severity", width: 76, sorter: "string", headerFilter: "input" },
+      { title: "Event", field: "event_type", width: 175, sorter: "string", headerFilter: "input" },
+      { title: "Actor", field: "actor", width: 140, sorter: "string", headerFilter: "input" },
+      { title: "Summary", field: "comment", minWidth: 240, widthGrow: 2, sorter: "string", headerFilter: "input" },
+      { title: "Details", field: "details", width: 70, hozAlign: "center", headerSort: false, formatter: function (cell) {
+        var row = cell.getRow().getData();
+        return '<button type="button" class="persistentlogger-details-button" data-event-id="' + text(row.event_id) + '" aria-label="View details" title="View details"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2 12s3.6-5.2 10-5.2S22 12 22 12s-3.6 5.2-10 5.2S2 12 2 12Zm10 2.7a2.7 2.7 0 1 0 0-5.4 2.7 2.7 0 0 0 0 5.4Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>';
       } }
     ];
-    if (window.agGrid && typeof window.agGrid.createGrid === "function") {
-      try {
-        gridApi = window.agGrid.createGrid(gridHost, { rowModelType: "serverSide", serverSideDatasource: datasource, columnDefs: columnDefs, animateRows: false, pagination: true, paginationPageSize: 25, cacheBlockSize: 25, maxBlocksInCache: 5, defaultColDef: { sortable: true, resizable: true, filter: true, wrapText: false }, getRowId: function (params) { return text(params.data.event_id); } });
-      } catch (reason) {
-        setState("The audit table could not start: " + (reason.message || "unknown grid error"), true);
-        return;
-      }
-      gridApi.addEventListener("modelUpdated", updateEmptyState);
-      search.addEventListener("input", function () {
-        if (!gridApi) return;
-        refreshServerRows();
+
+    var table;
+    try {
+      table = new window.Tabulator(gridHost, {
+        index: "event_id",
+        layout: "fitColumns",
+        height: "336px",
+        rowHeight: 36,
+        placeholder: "",
+        movableColumns: false,
+        pagination: true,
+        paginationMode: "remote",
+        paginationSize: 25,
+        paginationSizeSelector: [10, 25, 50, 100],
+        paginationCounter: "rows",
+        sortMode: "remote",
+        filterMode: "remote",
+        ajaxURL: endpoint,
+        ajaxURLGenerator: function (url, _config, params) { return requestUrl(params); },
+        ajaxConfig: { method: "GET", credentials: "same-origin", headers: { Accept: "application/json" } },
+        ajaxResponse: function (_url, params, response) {
+          var rows = Array.isArray(response.rows) ? response.rows : [];
+          lastTotal = Number.isInteger(response.total) ? response.total : rows.length;
+          setState(lastTotal + " event" + (lastTotal === 1 ? "" : "s") + " · newest first", false);
+          updateEmptyState();
+          return { last_page: Math.max(1, Math.ceil(lastTotal / (Number(params.size) || 25))), data: rows };
+        },
+        ajaxError: function (_xhr, _textStatus, errorThrown) {
+          visible(empty, false);
+          setState(errorThrown && errorThrown.message ? errorThrown.message : "The audit stream could not be loaded.", true);
+        },
+        dataLoading: function () { setState("Loading events…", false); },
+        columns: columns
       });
-      document.getElementById("persistentlogger-refresh").addEventListener("click", refreshServerRows);
-      exportJson.addEventListener("click", function () { exportEvents("json"); });
-      exportCsv.addEventListener("click", function () { exportEvents("csv"); });
-      detailsClose.addEventListener("click", closeDetails);
-      detailsFooterClose.addEventListener("click", closeDetails);
-      detailsCopy.addEventListener("click", copyDetails);
-      detailsDialog.addEventListener("click", function (event) { if (event.target === detailsDialog) closeDetails(); });
-    } else {
-      setState("The audit table could not start because its table library is unavailable.", true);
+    } catch (reason) {
+      setState("The audit table could not start: " + (reason.message || "unknown grid error"), true);
+      return;
     }
+
+    search.addEventListener("input", function () {
+      window.clearTimeout(searchTimer);
+      searchTimer = window.setTimeout(function () { table.setData(); }, 250);
+    });
+    gridHost.addEventListener("click", function (event) {
+      var button = event.target.closest("[data-event-id]");
+      if (!button) return;
+      var row = table.getRow(button.getAttribute("data-event-id"));
+      if (row) openDetails(row.getData());
+    });
+    document.getElementById("persistentlogger-refresh").addEventListener("click", function () { table.setData(); });
+    exportJson.addEventListener("click", function () { exportEvents("json"); });
+    exportCsv.addEventListener("click", function () { exportEvents("csv"); });
+    detailsClose.addEventListener("click", closeDetails);
+    detailsFooterClose.addEventListener("click", closeDetails);
+    detailsCopy.addEventListener("click", copyDetails);
+    detailsDialog.addEventListener("click", function (event) { if (event.target === detailsDialog) closeDetails(); });
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
-  } else {
-    init();
-  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
 }());

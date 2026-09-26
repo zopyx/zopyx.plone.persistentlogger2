@@ -18,9 +18,8 @@ legal advice.
 - opt-in content-type lifecycle logging from the control panel;
 - create/modify metadata snapshots and before/after diffs;
 - Plone toolbar access to the object audit view;
-- AG Grid Enterprise server-side row model with search, server-side sorting,
-  filtering, pagination, localized timestamps, structured-details popup, and
-  CSV/JSON export;
+- Tabulator server-side pagination with search, sorting, filtering, localized
+  timestamps, structured-details popup, and CSV/JSON export;
 - integrity verification, retention previews, legal holds, and governed
   deletion;
 - ZODB storage by default, SQLite for local tests, and PostgreSQL via
@@ -29,10 +28,9 @@ legal advice.
 - optional asynchronous audit delivery through `collective.taskqueue2`, with
   synchronous delivery kept as the default.
 
-The audit view uses AG Grid Enterprise's server-side row model. A production
-deployment therefore needs an AG Grid Enterprise license and the corresponding
-license-key configuration; the grid requests only the visible row blocks from
-the server.
+The audit view uses Tabulator's vanilla browser build with remote pagination,
+sorting, and filtering. It requests only the visible row blocks from the
+server; no commercial grid license or license-key configuration is required.
 
 ## Installation and activation
 
@@ -94,7 +92,7 @@ notification explicitly.
 For an object at `/Plone/path/to/object`:
 
 `@@persistent-log`  
-AG Grid audit view.
+Tabulator audit view.
 
 `@@persistent-log-data`  
 JSON data endpoint used by the grid.
