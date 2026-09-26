@@ -18,13 +18,19 @@ legal advice.
 - opt-in content-type lifecycle logging from the control panel;
 - create/modify metadata snapshots and before/after diffs;
 - Plone toolbar access to the object audit view;
-- AG Grid audit view with search, sorting, pagination, localized
-  timestamps, structured-details popup, and CSV/JSON export;
+- AG Grid Enterprise server-side row model with search, server-side sorting,
+  filtering, pagination, localized timestamps, structured-details popup, and
+  CSV/JSON export;
 - integrity verification, retention previews, legal holds, and governed
   deletion;
 - ZODB storage by default, SQLite for local tests, and PostgreSQL via
   psycopg;
 - transactional outbox primitives for retry and dead-letter handling.
+
+The audit view uses AG Grid Enterprise's server-side row model. A production
+deployment therefore needs an AG Grid Enterprise license and the corresponding
+license-key configuration; the grid requests only the visible row blocks from
+the server.
 
 ## Installation and activation
 
@@ -62,6 +68,24 @@ known sensitive detail keys are redacted.
 
 See [docs/USAGE.md](docs/USAGE.md) for lifecycle logging, the audit view,
 integrity checks, exports, and retention examples.
+
+Other add-ons can publish a site-wide notification with `zope.event`:
+
+```python
+from zope.event import notify
+from zopyx.plone.persistentlogger import PersistentLoggerNotification
+
+notify(PersistentLoggerNotification(
+    "Invoice approved",
+    event_type="business.invoice.approved",
+    actor="billing-service",
+    details={"invoice_id": "INV-42"},
+))
+```
+
+The notification subscriber resolves the current Plone site and logs the
+event under that site root. Background jobs should pass `site=portal` on the
+notification explicitly.
 
 ## Plone views and permissions
 

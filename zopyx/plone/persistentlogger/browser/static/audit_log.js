@@ -97,17 +97,41 @@
       visible(error, isError);
       if (isError) error.textContent = message;
     }
-    function render(rows) {
-      visible(empty, rows.length === 0);
-      if (gridApi) gridApi.setGridOption("rowData", rows);
+    function refreshServerRows() {
+      if (gridApi) gridApi.refreshServerSide({ purge: true });
     }
-    function load() {
-      setState("Loading events…", false);
-      fetch(endpoint, { credentials: "same-origin", headers: { Accept: "application/json" } })
-        .then(function (response) { if (!response.ok) throw new Error("The audit stream could not be loaded."); return response.json(); })
-        .then(function (payload) { var rows = Array.isArray(payload.rows) ? payload.rows : []; render(rows); setState(rows.length + " event" + (rows.length === 1 ? "" : "s") + " · newest first", false); })
-        .catch(function (reason) { render([]); setState(reason.message || "The audit stream could not be loaded.", true); });
+    function requestUrl(request) {
+      var params = new URLSearchParams({
+        startRow: String(request.startRow || 0),
+        endRow: String(request.endRow || 25),
+      });
+      if (search.value) params.set("quick", search.value);
+      params.set("sortModel", JSON.stringify(request.sortModel || []));
+      params.set("filterModel", JSON.stringify(request.filterModel || {}));
+      return endpoint + "?" + params.toString();
     }
+    var datasource = {
+      getRows: function (params) {
+        setState("Loading events…", false);
+        fetch(requestUrl(params.request), { credentials: "same-origin", headers: { Accept: "application/json" } })
+          .then(function (response) {
+            if (!response.ok) throw new Error("The audit stream could not be loaded.");
+            return response.json();
+          })
+          .then(function (payload) {
+            var rows = Array.isArray(payload.rows) ? payload.rows : [];
+            var total = Number.isInteger(payload.total) ? payload.total : rows.length;
+            params.success({ rowData: rows, rowCount: total });
+            setState(total + " event" + (total === 1 ? "" : "s") + " · newest first", false);
+            window.setTimeout(updateEmptyState, 0);
+          })
+          .catch(function (reason) {
+            params.fail();
+            visible(empty, true);
+            setState(reason.message || "The audit stream could not be loaded.", true);
+          });
+      }
+    };
     function exportEvents(format) {
       var params = new URLSearchParams({ format: format });
       if (search.value) params.set("quick", search.value);
@@ -132,7 +156,7 @@
     ];
     if (window.agGrid && typeof window.agGrid.createGrid === "function") {
       try {
-        gridApi = window.agGrid.createGrid(gridHost, { columnDefs: columnDefs, rowData: [], animateRows: false, pagination: true, paginationPageSize: 25, defaultColDef: { sortable: true, resizable: true, filter: true, wrapText: false }, getRowId: function (params) { return text(params.data.event_id); } });
+        gridApi = window.agGrid.createGrid(gridHost, { rowModelType: "serverSide", serverSideDatasource: datasource, columnDefs: columnDefs, animateRows: false, pagination: true, paginationPageSize: 25, cacheBlockSize: 25, maxBlocksInCache: 5, defaultColDef: { sortable: true, resizable: true, filter: true, wrapText: false }, getRowId: function (params) { return text(params.data.event_id); } });
       } catch (reason) {
         setState("The audit table could not start: " + (reason.message || "unknown grid error"), true);
         return;
@@ -140,17 +164,15 @@
       gridApi.addEventListener("modelUpdated", updateEmptyState);
       search.addEventListener("input", function () {
         if (!gridApi) return;
-        gridApi.setGridOption("quickFilterText", search.value);
-        window.setTimeout(updateEmptyState, 0);
+        refreshServerRows();
       });
-      document.getElementById("persistentlogger-refresh").addEventListener("click", load);
+      document.getElementById("persistentlogger-refresh").addEventListener("click", refreshServerRows);
       exportJson.addEventListener("click", function () { exportEvents("json"); });
       exportCsv.addEventListener("click", function () { exportEvents("csv"); });
       detailsClose.addEventListener("click", closeDetails);
       detailsFooterClose.addEventListener("click", closeDetails);
       detailsCopy.addEventListener("click", copyDetails);
       detailsDialog.addEventListener("click", function (event) { if (event.target === detailsDialog) closeDetails(); });
-      load();
     } else {
       setState("The audit table could not start because its table library is unavailable.", true);
     }

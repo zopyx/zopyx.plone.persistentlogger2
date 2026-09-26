@@ -16,6 +16,7 @@ from .models import DeletionPreview, LegalHold, LogEvent, RetentionPolicy
 from .serialization import canonical, digest
 
 ANNOTATION_KEY = "zopyx.plone.persistentlogger.next"
+SEARCH_FIELDS = {"event_id", "actor", "target", "event_type", "severity", "schema_version", "created_at", "comment"}
 
 
 def object_uid(context: Any) -> str:
@@ -132,10 +133,50 @@ class MemoryRepository:
                     row["comment"] + " " + row["actor"] + " " + row["event_type"]
                 ).casefold()
             ]
-        rows.sort(
-            key=lambda row: (row["created_at"], row["sequence"], row["event_id"]),
-            reverse=filters.get("sort", "desc") != "asc",
-        )
+        filter_model = filters.get("filter_model")
+        if isinstance(filter_model, dict):
+            for field, model in filter_model.items():
+                if field not in SEARCH_FIELDS or not isinstance(model, dict):
+                    continue
+                value = model.get("filter")
+                filter_type = model.get("type", "contains")
+                values = model.get("values")
+
+                def matches(row, field=field, value=value, filter_type=filter_type, values=values):
+                    current = "" if row.get(field) is None else str(row.get(field))
+                    if filter_type == "blank":
+                        return current == ""
+                    if filter_type == "notBlank":
+                        return current != ""
+                    if filter_type == "set":
+                        return isinstance(values, list) and current in {str(item) for item in values}
+                    needle = "" if value is None else str(value)
+                    if filter_type == "equals":
+                        return current.casefold() == needle.casefold()
+                    if filter_type == "notEqual":
+                        return current.casefold() != needle.casefold()
+                    if filter_type == "startsWith":
+                        return current.casefold().startswith(needle.casefold())
+                    if filter_type == "endsWith":
+                        return current.casefold().endswith(needle.casefold())
+                    return needle.casefold() in current.casefold()
+
+                rows = [row for row in rows if matches(row)]
+        sort_model = filters.get("sort_model")
+        if isinstance(sort_model, list) and sort_model:
+            for sort_item in reversed(sort_model):
+                if not isinstance(sort_item, dict) or sort_item.get("colId") not in SEARCH_FIELDS:
+                    continue
+                field = sort_item["colId"]
+                rows.sort(
+                    key=lambda row, field=field: str(row.get(field) or ""),
+                    reverse=sort_item.get("sort") != "asc",
+                )
+        else:
+            rows.sort(
+                key=lambda row: (row["created_at"], row["sequence"], row["event_id"]),
+                reverse=filters.get("sort", "desc") != "asc",
+            )
         limit = min(max(int(filters.get("limit", 100)), 0), 1000)
         offset = max(int(filters.get("offset", 0)), 0)
         return [dict(row) for row in rows[offset : offset + limit]]
@@ -143,6 +184,7 @@ class MemoryRepository:
     def count(self, **filters: Any) -> int:
         filters = dict(filters)
         filters["limit"] = len(self._events)
+        filters["offset"] = 0
         return len(self.search(**filters))
 
     def set_policy(self, policy: RetentionPolicy, *, actor: str) -> RetentionPolicy:

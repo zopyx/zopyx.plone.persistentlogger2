@@ -22,6 +22,7 @@ from zopyx.plone.persistentlogger.models import (
     Severity,
     utc,
 )
+from zopyx.plone.persistentlogger.notifications import PersistentLoggerNotification
 from zopyx.plone.persistentlogger.outbox import Envelope, Outbox
 from zopyx.plone.persistentlogger.rdbms import DuckDBRepository, SQLiteRepository
 from zopyx.plone.persistentlogger.repository import (
@@ -130,6 +131,8 @@ def test_memory_repository_append_search_and_integrity():
     assert row["sequence"] == 1
     assert repo.search(quick="CHANGED")[0]["event_id"] == str(first.event_id)
     assert repo.search(actor="alice", event_type="content.changed", limit=1)
+    assert repo.search(filter_model={"comment": {"type": "contains", "filter": "changed"}})
+    assert repo.search(sort_model=[{"colId": "actor", "sort": "asc"}])
     assert repo.count() == 1
     assert repo.verify()["ok"]
     with pytest.raises(IdempotentReplay):
@@ -139,6 +142,22 @@ def test_memory_repository_append_search_and_integrity():
     repo._events[0]["comment"] = "tampered"
     assert repo.verify()["ok"] is False
     assert repo.health()["integrity"] is False
+
+
+def test_memory_repository_server_filter_models():
+    repo = MemoryRepository("item")
+    repo.append(event(comment="changed invoice"))
+    row = repo.search()[0]
+    assert repo.search(filter_model={"missing": {"type": "equals", "filter": "x"}})
+    assert repo.search(filter_model={"target": {"type": "blank"}})
+    assert repo.search(filter_model={"comment": {"type": "notBlank"}})
+    assert repo.search(filter_model={"actor": {"type": "set", "values": ["alice"]}})
+    assert repo.search(filter_model={"comment": {"type": "equals", "filter": row["comment"]}})
+    assert repo.search(filter_model={"actor": {"type": "notEqual", "filter": "bob"}})
+    assert repo.search(filter_model={"comment": {"type": "startsWith", "filter": "changed"}})
+    assert repo.search(filter_model={"comment": {"type": "endsWith", "filter": "invoice"}})
+    assert repo.search(sort_model=[{"colId": "not-a-field", "sort": "asc"}])
+    assert repo.search(sort_model=["invalid"])
 
 
 def test_memory_repository_governance_retention_and_holds():
@@ -294,14 +313,15 @@ class Request:
 
 def test_browser_adapters(monkeypatch):
     context = SimpleNamespace(absolute_url=lambda: "http://example/obj")
-    request = Request({"quick": "title"})
-    monkeypatch.setattr(
-        browser,
-        "search_events",
-        lambda _context, **filters: [{"quick": filters["quick"]}],
+    request = Request({"quick": "title", "startRow": "5", "endRow": "30", "sortModel": "[]", "filterModel": "{}"})
+    repo = SimpleNamespace(
+        search=lambda **filters: [{"quick": filters["quick"], "offset": filters["offset"], "limit": filters["limit"]}],
+        count=lambda **filters: 11,
     )
+    monkeypatch.setattr("zopyx.plone.persistentlogger.api.repository_for", lambda _: repo)
     result = browser.AuditData(context, request)()
-    assert '"rows"' in result
+    assert '"total": 11' in result
+    assert '"offset": 5' in result
     assert request.response.headers["Content-Type"].startswith("application/json")
     view = browser.AuditLog(context, request)
     assert view.data_url.endswith("@@persistent-log-data")
@@ -318,6 +338,19 @@ def test_browser_adapters(monkeypatch):
     )
     with pytest.raises(ValidationError):
         browser._post(Request())
+
+
+def test_browser_audit_data_validates_server_requests(monkeypatch):
+    context = SimpleNamespace(id="item")
+    repo = SimpleNamespace(search=lambda **_: [], count=lambda **_: 0)
+    monkeypatch.setattr("zopyx.plone.persistentlogger.api.repository_for", lambda _: repo)
+    with pytest.raises(ValidationError):
+        browser.AuditData(context, Request({"startRow": "bad"}))()
+    with pytest.raises(ValidationError):
+        browser.AuditData(context, Request({"sortModel": "bad"}))()
+    with pytest.raises(ValidationError):
+        browser.AuditData(context, Request({"filterModel": "bad"}))()
+    assert '"total": 0' in browser.AuditData(context, Request({"startRow": "2"}))()
 
 
 def test_subscriber_diff_helpers():
@@ -341,6 +374,37 @@ def test_subscriber_diff_helpers():
         descriptions=[SimpleNamespace(attributes=("title",), keys=("subject",))]
     )
     assert subscribers._changed_fields(event_object) == ["subject", "title"]
+
+
+def test_site_notification_subscriber_logs_at_site_root(monkeypatch):
+    site = SimpleNamespace(id="Plone")
+    logged = []
+    monkeypatch.setattr(subscribers, "log_event", lambda *args, **kwargs: logged.append((args, kwargs)))
+    notification = PersistentLoggerNotification(
+        "Invoice approved",
+        event_type="business.invoice.approved",
+        actor="alice",
+        details={"invoice_id": "INV-42"},
+        site=site,
+    )
+    subscribers.log_notification(notification)
+    assert logged == [
+        ((site, "Invoice approved"), {
+            "event_type": "business.invoice.approved",
+            "severity": "info",
+            "actor": "alice",
+            "target": None,
+            "info_url": None,
+            "details": {"invoice_id": "INV-42"},
+            "occurred_at": None,
+        })
+    ]
+    monkeypatch.setattr(subscribers, "getSite", lambda: site)
+    subscribers.log_notification(PersistentLoggerNotification("Uses current site"))
+    assert logged[-1][0][0] is site
+    monkeypatch.setattr(subscribers, "getSite", lambda: None)
+    subscribers.log_notification(PersistentLoggerNotification("No site"))
+    assert len(logged) == 2
 
 
 def test_api_services_and_export_limits(monkeypatch):

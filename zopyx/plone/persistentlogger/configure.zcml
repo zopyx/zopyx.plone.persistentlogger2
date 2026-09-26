@@ -4,6 +4,7 @@
   <browser:resourceDirectory name="persistentlogger" directory="browser/static" />
   <subscriber for="Products.CMFCore.interfaces.IContentish zope.lifecycleevent.interfaces.IObjectAddedEvent" handler=".subscribers.log_added" />
   <subscriber for="Products.CMFCore.interfaces.IContentish zope.lifecycleevent.interfaces.IObjectModifiedEvent" handler=".subscribers.log_modified" />
+  <subscriber for=".interfaces.IPersistentLoggerNotification" handler=".subscribers.log_notification" />
   <browser:page name="persistentlogger-controlpanel" for="Products.CMFCore.interfaces.ISiteRoot" permission="cmf.ManagePortal" class=".controlpanel.AuditLoggingControlPanel" />
   <browser:page name="persistentlogger-controlpanel-save" for="Products.CMFCore.interfaces.ISiteRoot" permission="cmf.ManagePortal" class=".controlpanel.AuditLoggingControlPanelSave" />
   <browser:page name="persistentlogger-enabled" for="*" permission="zope2.View" class=".controlpanel.LoggingEnabled" />
