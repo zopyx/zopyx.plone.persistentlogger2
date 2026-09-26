@@ -48,6 +48,12 @@ become lists, and sensitive keys are replaced before storage. Oversized detail
 payloads are rejected. The returned row includes `event_id`, `sequence`,
 `previous_digest`, `integrity_digest`, and `write_status`.
 
+In synchronous mode, `log_event()` returns the persisted row. With global
+`audit_write_mode=taskqueue2`, it returns the validated event payload after
+queue acceptance with `write_status="enqueued"`; the row may not yet be
+searchable. Queue rejection raises a configuration error and does not silently
+fall back to synchronous persistence.
+
 ## Search and verification
 
 ```python

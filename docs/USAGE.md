@@ -25,6 +25,23 @@ Keep details JSON-compatible and avoid credentials in comments, targets, or
 URLs. Details are redacted and bounded, but callers should still avoid passing
 secrets unnecessarily.
 
+### Optional asynchronous delivery
+
+Synchronous writes are the default. To enable asynchronous delivery, install
+the `taskqueue2` extra, configure a consumer with the same
+`HUEY_TASKQUEUE_URL`, and select **collective.taskqueue2** under **Audit write
+delivery** in the site control panel:
+
+```python
+row = log_event(context, "Payment captured")
+assert row["write_status"] == "enqueued"
+```
+
+This status means the immutable event envelope was accepted by the queue, not
+that the audit row is already persisted. The worker opens a fresh transaction
+and uses the original event ID, so retries are idempotent. Do not enable async
+mode without a running consumer and monitoring for retries or failed tasks.
+
 ## Site-wide notifications
 
 For events emitted by another add-on, publish

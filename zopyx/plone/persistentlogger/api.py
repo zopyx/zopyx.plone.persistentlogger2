@@ -9,6 +9,7 @@ from datetime import datetime
 from typing import Any
 
 from .errors import ValidationError
+from .delivery import enqueue
 from .models import LogEvent, RetentionPolicy
 from .repository import LogRepository, ZODBRepository, object_uid
 
@@ -56,6 +57,10 @@ def log_event(
         occurred_at=occurred_at,
         **({"created_at": created_at} if created_at is not None else {}),
     )
+    from .controlpanel import audit_write_mode
+
+    if audit_write_mode(context) == "taskqueue2":
+        return enqueue(context, event)
     return repository_for(context).append(event)
 
 

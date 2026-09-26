@@ -18,6 +18,12 @@ class ISettings(Interface):
         values=("joined", "outbox", "independent"),
         default="outbox",
     )
+    audit_write_mode = schema.Choice(
+        title="Audit write delivery",
+        description="Write audit events synchronously or enqueue them with collective.taskqueue2.",
+        values=("sync", "taskqueue2"),
+        default="sync",
+    )
     detail_limit = schema.Int(
         title="Detail byte limit", default=65536, min=1024, max=100000
     )

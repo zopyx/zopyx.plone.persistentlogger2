@@ -9,6 +9,7 @@ CSRF-protected `@@persistentlogger-controlpanel-save` POST endpoint.
 | `audit_logging_enabled` | Boolean | `true` | Global switch; lifecycle logging also needs selected types. |
 | `backend` | `zodb`, `rdbms` | `zodb` | Storage backend selection. |
 | `transaction_mode` | `joined`, `outbox`, `independent` | `outbox` | Transaction behavior for supported adapters. |
+| `audit_write_mode` | `sync`, `taskqueue2` | `sync` | Event delivery mode; async mode requires the optional taskqueue2 consumer. |
 | `detail_limit` | 1,024–100,000 bytes | `65536` | Maximum serialized detail size. |
 | `enabled_content_types` | Set of Plone type IDs | empty | Lifecycle types to log. |
 | `database_url` | Optional, max 2,048 chars | empty | Password-style RDBMS URL. |
@@ -46,6 +47,21 @@ or `independent`:
 
 The default is `outbox`. The setting does not retroactively change existing
 events or transaction history.
+
+### `audit_write_mode`
+
+`sync` (the default) appends through the repository before `log_event()`
+returns. `taskqueue2` serializes and queues the complete event envelope; the
+caller receives `write_status="enqueued"`, and a worker later opens a fresh
+transaction and appends the event using its original ID. Replayed tasks are
+idempotent.
+
+Install the optional `taskqueue2` extra and configure `HUEY_TASKQUEUE_URL` and
+`HUEY_CONSUMER=1` in the consumer environment. Queue URLs may use the
+taskqueue2-supported Redis, SQLite, memory, or filesystem schemes; use Redis
+for production. Queue configuration is intentionally external to the Plone
+registry. Selecting async mode without taskqueue2 or a usable queue raises a
+configuration error rather than silently falling back to synchronous storage.
 
 ### `detail_limit`
 
@@ -94,5 +110,7 @@ browser endpoints require POST and CSRF validation in addition to permissions.
 3. Select lifecycle content types explicitly.
 4. Confirm the object action and integrity endpoint for a test object.
 5. Separate export and retention permissions from view access.
-6. Install the matching optional driver and run adapter contract tests before
+6. Install and verify taskqueue2 plus a consumer before selecting async write
+   delivery.
+7. Install the matching optional driver and run adapter contract tests before
    production RDBMS use.

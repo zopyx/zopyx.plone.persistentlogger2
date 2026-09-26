@@ -41,6 +41,15 @@ def logging_enabled(context) -> bool:
     ) in enabled_content_types(context)
 
 
+def audit_write_mode(context=None) -> str:
+    registry = _registry()
+    if registry is None:
+        return "sync"
+    settings = registry.forInterface(ISettings, check=False)
+    mode = getattr(settings, "audit_write_mode", None) or "sync"
+    return mode if mode in {"sync", "taskqueue2"} else "sync"
+
+
 class AuditLoggingControlPanel:
     """Render and persist audit settings through SurveyJS Form Library."""
 
@@ -80,10 +89,11 @@ class AuditLoggingControlPanel:
     def survey(self):
         settings = self._settings()
         logger.info(
-            "Loading audit control-panel settings: enabled=%s backend=%s transaction_mode=%s detail_limit=%s content_types=%s",
+            "Loading audit control-panel settings: enabled=%s backend=%s transaction_mode=%s audit_write_mode=%s detail_limit=%s content_types=%s",
             getattr(settings, "audit_logging_enabled", True),
             getattr(settings, "backend", None) or "zodb",
             getattr(settings, "transaction_mode", None) or "outbox",
+            getattr(settings, "audit_write_mode", None) or "sync",
             getattr(settings, "detail_limit", 65536),
             sorted(getattr(settings, "enabled_content_types", ()) or ()),
         )
@@ -127,6 +137,17 @@ class AuditLoggingControlPanel:
                                     "defaultValue": "outbox",
                                     "description": "Joined writes with the current transaction; outbox queues delivery; independent commits separately.",
                                     "choices": ["joined", "outbox", "independent"],
+                                },
+                                {
+                                    "type": "radiogroup",
+                                    "name": "audit_write_mode",
+                                    "title": "Audit write delivery",
+                                    "defaultValue": "sync",
+                                    "description": "Synchronous writes are durable before the caller returns. taskqueue2 returns after queue acceptance and requires a running consumer.",
+                                    "choices": [
+                                        {"value": "sync", "text": "Synchronous"},
+                                        {"value": "taskqueue2", "text": "collective.taskqueue2"},
+                                    ],
                                 },
                                 {
                                     "type": "text",
@@ -173,6 +194,8 @@ class AuditLoggingControlPanel:
                 "backend": getattr(settings, "backend", None) or "zodb",
                 "transaction_mode": getattr(settings, "transaction_mode", None)
                 or "outbox",
+                "audit_write_mode": getattr(settings, "audit_write_mode", None)
+                or "sync",
                 "detail_limit": getattr(settings, "detail_limit", 65536),
                 "enabled_content_types": sorted(
                     getattr(settings, "enabled_content_types", ()) or ()
@@ -211,11 +234,12 @@ class AuditLoggingControlPanelSave:
             raise ValidationError("audit_logging_enabled must be boolean")
         backend = str(data.get("backend", "zodb"))
         transaction_mode = str(data.get("transaction_mode", "outbox"))
+        audit_write_mode = str(data.get("audit_write_mode", "sync"))
         if backend not in {"zodb", "rdbms"} or transaction_mode not in {
             "joined",
             "outbox",
             "independent",
-        }:
+        } or audit_write_mode not in {"sync", "taskqueue2"}:
             raise ValidationError("invalid storage settings")
         try:
             detail_limit = int(data.get("detail_limit", 65536))
@@ -233,14 +257,16 @@ class AuditLoggingControlPanelSave:
         settings.audit_logging_enabled = audit_logging_enabled
         settings.backend = backend
         settings.transaction_mode = transaction_mode
+        settings.audit_write_mode = audit_write_mode
         settings.detail_limit = detail_limit
         settings.enabled_content_types = set(enabled)
         settings.database_url = str(data.get("database_url", "") or "")
         logger.info(
-            "Saving audit control-panel settings: enabled=%s backend=%s transaction_mode=%s detail_limit=%s content_types=%s database_url_configured=%s",
+            "Saving audit control-panel settings: enabled=%s backend=%s transaction_mode=%s audit_write_mode=%s detail_limit=%s content_types=%s database_url_configured=%s",
             audit_logging_enabled,
             backend,
             transaction_mode,
+            audit_write_mode,
             detail_limit,
             sorted(enabled),
             bool(settings.database_url),

@@ -6,7 +6,7 @@ from uuid import uuid4
 
 import pytest
 
-from zopyx.plone.persistentlogger import api, browser, subscribers
+from zopyx.plone.persistentlogger import api, browser, delivery, subscribers
 from zopyx.plone.persistentlogger.errors import (
     ConfigurationError,
     DuplicateEvent,
@@ -25,6 +25,10 @@ from zopyx.plone.persistentlogger.models import (
 from zopyx.plone.persistentlogger.notifications import PersistentLoggerNotification
 from zopyx.plone.persistentlogger.outbox import Envelope, Outbox
 from zopyx.plone.persistentlogger.rdbms import DuckDBRepository, SQLiteRepository
+from zopyx.plone.persistentlogger.async_tasks import (
+    _event_from_payload,
+    persist_event,
+)
 from zopyx.plone.persistentlogger.repository import (
     MemoryRepository,
     ZODBRepository,
@@ -44,7 +48,7 @@ NOW = datetime(2026, 1, 2, 12, 0, tzinfo=UTC)
 
 
 def event(
-    uid="item", *, comment="changed", created_at=NOW, event_id=None, details=None
+    uid="item", *, comment="changed", created_at=NOW, occurred_at=None, event_id=None, details=None
 ):
     return LogEvent(
         comment=comment,
@@ -52,6 +56,7 @@ def event(
         actor="alice",
         event_type="content.changed",
         created_at=created_at,
+        occurred_at=occurred_at,
         event_id=event_id or uuid4(),
         details=details,
     )
@@ -429,6 +434,204 @@ def test_api_services_and_export_limits(monkeypatch):
     assert api._current_actor() == "system"
 
 
+def test_async_delivery_enqueues_immutable_event_and_worker_is_idempotent(monkeypatch):
+    repo = MemoryRepository("item")
+    site = SimpleNamespace(getPhysicalPath=lambda: ("", "Plone"))
+    context = SimpleNamespace(
+        id="item", getPhysicalPath=lambda: ("", "Plone", "item")
+    )
+    settings = SimpleNamespace(audit_write_mode="taskqueue2")
+    queued = []
+    monkeypatch.setattr(
+        "zopyx.plone.persistentlogger.controlpanel._registry",
+        lambda: SimpleNamespace(forInterface=lambda *_a, **_kw: settings),
+    )
+    monkeypatch.setattr(api, "repository_for", lambda _: repo)
+    monkeypatch.setattr(
+        "zope.component.hooks.getSite", lambda: site
+    )
+    monkeypatch.setattr(delivery, "_task", lambda: lambda **payload: queued.append(payload))
+
+    result = api.log_event(context, "queued", details={"token": "secret"})
+
+    assert result["write_status"] == "enqueued"
+    assert repo.search() == []
+    assert queued[0]["event"]["details"] == {"token": "[REDACTED]"}
+    assert all(isinstance(value, (str, dict)) for value in queued[0].values())
+
+    first = persist_event(repo, _event_from_payload(queued[0]["event"]))
+    second = persist_event(repo, _event_from_payload(queued[0]["event"]))
+    assert first["write_status"] == "accepted"
+    assert second["write_status"] == "already_persisted"
+    assert len(repo.search()) == 1
+    assert repo.verify()["ok"]
+
+
+@pytest.mark.parametrize("mode", ["sync", "taskqueue2"])
+def test_zodb_and_reference_repositories_support_both_delivery_modes(
+    monkeypatch, mode
+):
+    stores = {}
+    monkeypatch.setattr(
+        "zope.annotation.interfaces.IAnnotations", lambda _context: stores
+    )
+    repo = ZODBRepository(SimpleNamespace(id="item"))
+    context = SimpleNamespace(
+        id="item", getPhysicalPath=lambda: ("", "Plone", "item")
+    )
+    settings = SimpleNamespace(audit_write_mode=mode)
+    monkeypatch.setattr(
+        "zopyx.plone.persistentlogger.controlpanel._registry",
+        lambda: SimpleNamespace(forInterface=lambda *_a, **_kw: settings),
+    )
+    queued = []
+    monkeypatch.setattr(api, "repository_for", lambda _: repo)
+    monkeypatch.setattr(delivery, "_task", lambda: lambda **payload: queued.append(payload))
+
+    result = api.log_event(context, f"{mode} event")
+    if mode == "taskqueue2":
+        assert result["write_status"] == "enqueued"
+        result = persist_event(repo, _event_from_payload(queued[0]["event"]))
+    assert result["object_uid"] == "item"
+    assert repo.verify()["ok"]
+
+
+def test_async_delivery_requires_paths_and_taskqueue(monkeypatch):
+    context = SimpleNamespace(id="item")
+    with pytest.raises(ConfigurationError):
+        delivery.event_envelope(context, event())
+    monkeypatch.setattr(delivery, "event_envelope", lambda *_args: {"event": event().to_dict()})
+    from zopyx.plone.persistentlogger import async_tasks
+
+    monkeypatch.setattr(
+        async_tasks,
+        "persist_audit_event",
+        lambda **_: (_ for _ in ()).throw(ConfigurationError("not installed")),
+    )
+    monkeypatch.setattr(delivery, "_task", lambda: async_tasks.persist_audit_event)
+    with pytest.raises(ConfigurationError, match="not installed"):
+        delivery.enqueue(context, event())
+
+
+def test_async_payload_and_worker_transaction_paths(monkeypatch):
+    import transaction
+    import Zope2
+
+    original_manager = transaction.manager
+    calls = []
+    monkeypatch.setattr(
+        original_manager,
+        "begin",
+        lambda: calls.append("begin"),
+    )
+    monkeypatch.setattr(original_manager, "commit", lambda: calls.append("commit"))
+    monkeypatch.setattr(original_manager, "abort", lambda: calls.append("abort"))
+
+    class Jar:
+        def close(self):
+            calls.append("close")
+
+    class Site:
+        def restrictedTraverse(self, path, default=None):
+            return SimpleNamespace() if path == "/Plone/item" else default
+
+    app = SimpleNamespace(
+        restrictedTraverse=lambda path, default=None: Site()
+        if path == "/Plone"
+        else default,
+        _p_jar=Jar(),
+    )
+    monkeypatch.setattr(Zope2, "app", lambda: app)
+    monkeypatch.setattr("zope.component.hooks.setSite", lambda site: calls.append(site))
+    monkeypatch.setattr(
+        "zopyx.plone.persistentlogger.api.repository_for",
+        lambda _: MemoryRepository("item"),
+    )
+    from zopyx.plone.persistentlogger.async_tasks import _persist_audit_event
+
+    payload = {
+        "site_path": "/Plone",
+        "context_path": "/Plone/item",
+        "event": event(occurred_at=NOW).to_dict(),
+    }
+    result = _persist_audit_event(payload)
+    assert result["object_uid"] == "item"
+    assert calls[0] == "begin"
+    assert "commit" in calls
+    assert calls[-1] == "close"
+
+    app.restrictedTraverse = lambda _path, default=None: default
+    with pytest.raises(ValueError, match="No Plone site"):
+        _persist_audit_event(payload)
+    assert calls[-2:] == ["abort", "close"]
+
+
+def test_async_worker_aborts_when_context_is_missing(monkeypatch):
+    import transaction
+    import Zope2
+
+    calls = []
+    monkeypatch.setattr(transaction.manager, "begin", lambda: calls.append("begin"))
+    monkeypatch.setattr(transaction.manager, "abort", lambda: calls.append("abort"))
+    monkeypatch.setattr(transaction.manager, "commit", lambda: calls.append("commit"))
+
+    class Jar:
+        def close(self):
+            calls.append("close")
+
+    class Site:
+        restrictedTraverse = lambda self, _path, default=None: default
+
+    app = SimpleNamespace(
+        restrictedTraverse=lambda _path, default=None: Site(), _p_jar=Jar()
+    )
+    monkeypatch.setattr(Zope2, "app", lambda: app)
+    monkeypatch.setattr("zope.component.hooks.setSite", lambda _site: None)
+    from zopyx.plone.persistentlogger.async_tasks import _persist_audit_event
+
+    with pytest.raises(ValueError, match="No context"):
+        _persist_audit_event(
+            {"site_path": "/Plone", "context_path": "/Plone/item", "event": event().to_dict()}
+        )
+    assert calls == ["begin", "abort", "close"]
+
+
+def test_async_persist_event_replay_without_existing_row():
+    class Repository:
+        def append(self, _event):
+            from zopyx.plone.persistentlogger.errors import IdempotentReplay
+
+            raise IdempotentReplay("missing")
+
+        def get(self, _event_id):
+            return None
+
+    with pytest.raises(IdempotentReplay):
+        persist_event(Repository(), event())
+
+
+def test_delivery_fallbacks(monkeypatch):
+    context = SimpleNamespace(
+        getPhysicalPath=lambda: ("", "Plone", "item")
+    )
+    monkeypatch.setattr("zope.component.hooks.getSite", lambda: (_ for _ in ()).throw(RuntimeError()))
+    assert delivery.event_envelope(context, event())["site_path"] == "/Plone/item"
+    real_task = delivery._task
+    assert real_task()
+    monkeypatch.setattr(delivery, "_task", lambda: lambda **_: (_ for _ in ()).throw(RuntimeError()))
+    with pytest.raises(ConfigurationError, match="could not accept"):
+        delivery.enqueue(context, event())
+    from zopyx.plone.persistentlogger import async_tasks
+    monkeypatch.setattr(
+        async_tasks,
+        "persist_audit_event",
+        lambda **_: (_ for _ in ()).throw(ConfigurationError("not installed")),
+    )
+    monkeypatch.setattr(delivery, "_task", lambda: async_tasks.persist_audit_event)
+    with pytest.raises(ConfigurationError, match="not installed"):
+        delivery.enqueue(context, event())
+
+
 def test_api_actor_failure_and_repository_selection(monkeypatch):
     context = SimpleNamespace(id="item")
     monkeypatch.setattr(
@@ -558,6 +761,7 @@ def test_controlpanel_settings_and_logging(monkeypatch, caplog):
     assert survey["pages"][0]["elements"][0]["defaultValue"] is True
     assert survey["pages"][0]["elements"][1]["elements"][0]["defaultValue"] == "zodb"
     assert survey["data"]["transaction_mode"] == "outbox"
+    assert survey["data"]["audit_write_mode"] == "sync"
     assert survey["pages"][0]["elements"][1]["elements"][1]["defaultValue"] == "outbox"
     assert survey["data"]["enabled_content_types"] == ["Document"]
     questions = [
@@ -619,6 +823,7 @@ def test_controlpanel_save(monkeypatch, caplog):
     assert result == ""
     assert "Saving audit control-panel settings" in caplog.text
     assert settings.backend == "rdbms"
+    assert settings.audit_write_mode == "sync"
     assert settings.enabled_content_types == {"Document"}
     controlpanel.AuditLoggingControlPanelSave(
         context,
@@ -643,6 +848,7 @@ def test_controlpanel_save(monkeypatch, caplog):
         '{"detail_limit":100001}',
         '{"detail_limit":"bad"}',
         '{"enabled_content_types":"Document"}',
+        '{"audit_write_mode":"invalid"}',
     ):
         with pytest.raises(ValidationError):
             controlpanel.AuditLoggingControlPanelSave(context, BodyRequest(payload))()

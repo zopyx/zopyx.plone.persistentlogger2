@@ -25,7 +25,9 @@ legal advice.
   deletion;
 - ZODB storage by default, SQLite for local tests, and PostgreSQL via
   psycopg;
-- transactional outbox primitives for retry and dead-letter handling.
+- transactional outbox primitives for retry and dead-letter handling;
+- optional asynchronous audit delivery through `collective.taskqueue2`, with
+  synchronous delivery kept as the default.
 
 The audit view uses AG Grid Enterprise's server-side row model. A production
 deployment therefore needs an AG Grid Enterprise license and the corresponding
@@ -137,6 +139,7 @@ field and is never returned by health responses.
 | `audit_logging_enabled` | Boolean | `true` | Global on/off switch. |
 | `backend` | `zodb`, `rdbms` | `zodb` | Storage backend selection. |
 | `transaction_mode` | `joined`, `outbox`, `independent` | `outbox` | Transaction behavior for supported adapters. |
+| `audit_write_mode` | `sync`, `taskqueue2` | `sync` | Inline persistence or taskqueue2 delivery. |
 | `detail_limit` | 1,024–100,000 bytes | `65536` | Maximum serialized details size. |
 | `enabled_content_types` | Set of Plone type IDs | empty | Lifecycle types to log. |
 | `database_url` | Optional, max 2,048 chars | empty | Password-style RDBMS URL. |
@@ -152,6 +155,24 @@ lifecycle switch; `enabled_content_types` is the lifecycle allow-list;
 adapters; and `database_url` supplies an optional RDBMS connection without
 migrating existing ZODB records. Direct `log_event` calls are not disabled by
 the lifecycle content-type allow-list.
+
+`audit_write_mode=sync` keeps the normal contract: `log_event()` returns after
+the repository accepts the event. `audit_write_mode=taskqueue2` returns a
+validated event envelope with `write_status="enqueued"`; the final row is
+written by a consumer and may not yet be searchable. Event IDs make retries
+idempotent. Install the optional extra and configure the consumer outside the
+Plone registry, for example:
+
+```shell
+uv sync --extra taskqueue2
+export HUEY_TASKQUEUE_URL=redis://localhost:6379/0
+export HUEY_CONSUMER=1
+```
+
+Use taskqueue2's `HUEY_WORKERS`, `HUEY_WORKER_TYPE`, retry/backoff, and logging
+settings for deployment operations. Redis is recommended for production;
+SQLite or memory queues are intended for development. Queue failures are
+reported and never silently changed to synchronous writes.
 
 ## Application API
 

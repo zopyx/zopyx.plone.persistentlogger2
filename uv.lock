@@ -272,6 +272,19 @@ wheels = [
 ]
 
 [[package]]
+name = "collective-taskqueue2"
+version = "1.0a1"
+source = { git = "https://github.com/collective/collective.taskqueue2.git?rev=00776335e9c1dc3e5101ff3c23c9e0912bad1dd3#00776335e9c1dc3e5101ff3c23c9e0912bad1dd3" }
+dependencies = [
+    { name = "furl" },
+    { name = "huey" },
+    { name = "plone-api" },
+    { name = "plone-app-dexterity" },
+    { name = "setuptools" },
+    { name = "z3c-jbot" },
+]
+
+[[package]]
 name = "colorama"
 version = "0.4.6"
 source = { registry = "https://pypi.org/simple" }
@@ -534,6 +547,28 @@ wheels = [
 ]
 
 [[package]]
+name = "furl"
+version = "2.1.4"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "orderedmultidict" },
+    { name = "six" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/53/e4/203a76fa2ef46cdb0a618295cc115220cbb874229d4d8721068335eb87f0/furl-2.1.4.tar.gz", hash = "sha256:877657501266c929269739fb5f5980534a41abd6bbabcb367c136d1d3b2a6015", size = 57526, upload-time = "2025-03-09T05:36:21.175Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/61/8c/dce3b1b7593858eba995b2dfdb833f872c7f863e3da92aab7128a6b11af4/furl-2.1.4-py2.py3-none-any.whl", hash = "sha256:da34d0b34e53ffe2d2e6851a7085a05d96922b5b578620a37377ff1dbeeb11c8", size = 27550, upload-time = "2025-03-09T05:36:19.928Z" },
+]
+
+[[package]]
+name = "huey"
+version = "3.4.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/57/25/1281d8f3febc30b5facbfc5e4163447241711591c094dac642d32c827eb0/huey-3.4.0.tar.gz", hash = "sha256:ac9b02e741f13da4092ea19bcaafc73669e97d3153914d2fed2868df144f6dfa", size = 630013, upload-time = "2026-09-04T02:04:34.521Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/57/31/cee585bd4d1e39947a426a6736f4e17d22b454952370fb9cf48eb3103085/huey-3.4.0-py3-none-any.whl", hash = "sha256:d0580762397744026f83baae5f2b97a62474a62b8565ac75bbafefe72f9c784f", size = 136493, upload-time = "2026-09-04T02:04:32.848Z" },
+]
+
+[[package]]
 name = "icalendar"
 version = "7.3.0"
 source = { registry = "https://pypi.org/simple" }
@@ -702,6 +737,18 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/49/c4/f3f0c57ec3e845bae038d3849af0e2b9d3f62a046b2a09af3f697ad882d6/multipart-2.0.0.tar.gz", hash = "sha256:d6076567b489270271d9ec103d404745da1501ad5b70e3a7f1f07f5623d82850", size = 42606, upload-time = "2026-07-18T16:03:23.993Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/71/dd/feb9c23d5c5a382194a9f86b02e98b8724d745e1a1cf4ecb1a5c0f884aa1/multipart-2.0.0-py3-none-any.whl", hash = "sha256:b3d4d473c4b96bb43e0d54b76fcc3b89b904df28387daf54e08405eb2123a081", size = 16418, upload-time = "2026-07-18T16:03:22.599Z" },
+]
+
+[[package]]
+name = "orderedmultidict"
+version = "1.0.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "six" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/5c/62/61ad51f6c19d495970230a7747147ce7ed3c3a63c2af4ebfdb1f6d738703/orderedmultidict-1.0.2.tar.gz", hash = "sha256:16a7ae8432e02cc987d2d6d5af2df5938258f87c870675c73ee77a0920e6f4a6", size = 13973, upload-time = "2025-11-18T08:00:42.649Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b2/6c/d8a02ffb24876b5f51fbd781f479fc6525a518553a4196bd0433dae9ff8e/orderedmultidict-1.0.2-py2.py3-none-any.whl", hash = "sha256:ab5044c1dca4226ae4c28524cfc5cc4c939f0b49e978efa46a6ad6468049f79b", size = 11897, upload-time = "2025-11-18T08:00:41.44Z" },
 ]
 
 [[package]]
@@ -3817,6 +3864,23 @@ wheels = [
 ]
 
 [[package]]
+name = "z3c-jbot"
+version = "3.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "setuptools" },
+    { name = "zope-component" },
+    { name = "zope-configuration" },
+    { name = "zope-pagetemplate" },
+    { name = "zope-publisher" },
+    { name = "zope-security" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/61/aa/10b8c7750e6a77cdaff8d7e0eca8554d2802e61d7223df920f46488f6b6a/z3c_jbot-3.1.tar.gz", hash = "sha256:80f4f3ff01946f08ee986cae05b8c1b2b491983dfc1da0a1fad6b852fa7968ab", size = 20758, upload-time = "2025-07-29T08:16:24.77Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a1/0b/fb3fd7287af2a6a3d5c2bc827748cf04d96680208cc5f9088075a394fbd7/z3c_jbot-3.1-py3-none-any.whl", hash = "sha256:ddc90de6e6d65652101f45775ccb05774645d847489c8578bc0da8596bb5c969", size = 20334, upload-time = "2025-07-29T08:16:23.686Z" },
+]
+
+[[package]]
 name = "z3c-objpath"
 version = "3.0"
 source = { registry = "https://pypi.org/simple" }
@@ -4893,6 +4957,9 @@ rdbms = [
     { name = "duckdb" },
     { name = "psycopg", extra = ["binary"] },
 ]
+taskqueue2 = [
+    { name = "collective-taskqueue2" },
+]
 test = [
     { name = "plone" },
     { name = "plone-app-testing" },
@@ -4902,6 +4969,7 @@ test = [
 
 [package.metadata]
 requires-dist = [
+    { name = "collective-taskqueue2", marker = "extra == 'taskqueue2'", git = "https://github.com/collective/collective.taskqueue2.git?rev=00776335e9c1dc3e5101ff3c23c9e0912bad1dd3" },
     { name = "duckdb", marker = "extra == 'rdbms'", specifier = ">=1.2" },
     { name = "plone", marker = "extra == 'demo'", specifier = ">=6.2,<6.3" },
     { name = "plone", marker = "extra == 'test'", specifier = ">=6.2,<6.3" },
@@ -4921,4 +4989,4 @@ requires-dist = [
     { name = "zope-event" },
     { name = "zope-interface" },
 ]
-provides-extras = ["rdbms", "test", "integration", "dev", "demo"]
+provides-extras = ["rdbms", "test", "integration", "taskqueue2", "dev", "demo"]

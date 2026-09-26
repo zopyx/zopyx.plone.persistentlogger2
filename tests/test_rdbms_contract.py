@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 import pytest
 
 from zopyx.plone.persistentlogger.models import LogEvent
+from zopyx.plone.persistentlogger.async_tasks import persist_event
 from zopyx.plone.persistentlogger.rdbms import (
     DuckDBRepository,
     PostgresRepository,
@@ -50,14 +51,20 @@ def backend(request, tmp_path_factory):
         repository.close()
 
 
-def test_backend_append_search_and_integrity(backend):
+@pytest.mark.parametrize("mode", ["sync", "taskqueue2"])
+def test_backend_append_search_and_integrity(backend, mode):
     name, repository = backend
-    row = repository.append(make_event())
+    row = (
+        repository.append(make_event())
+        if mode == "sync"
+        else persist_event(repository, make_event())
+    )
     assert row["object_uid"] == "contract"
     assert repository.search(quick="CONTRACT")[0]["event_id"] == row["event_id"]
     assert repository.verify()["ok"]
     assert repository.health()["backend"] == "rdbms"
     assert name in {"sqlite", "duckdb", "postgres"}
+    assert mode in {"sync", "taskqueue2"}
 
 
 def test_backend_reopens_persisted_events(backend, tmp_path):
